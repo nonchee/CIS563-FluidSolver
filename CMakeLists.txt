@@ -37,6 +37,7 @@ find_package(OPENGL REQUIRED)
 find_package(GLEW)
 find_library(GLFW_LIBRARY "glfw3" HINTS ${GLFW_LIBRARY_DIR})
 find_library(JSONCPP "jsoncpp")
+find_library(OPENVDB "openvdb")
 
 add_definitions(
         -DTW_STATIC
@@ -46,7 +47,7 @@ add_definitions(
         -D_CRT_SECURE_NO_WARNINGS
 )
 
-set(CORE_LIBS ${GLFW_LIBRARY} ${GLUT_LIBRARY} ${GLEW_LIBRARY} ${JSONCPP} ${OPENGL_LIBRARY} )
+set(CORE_LIBS ${GLFW_LIBRARY} ${GLUT_LIBRARY} ${GLEW_LIBRARY} ${JSONCPP} ${OPENVDB} ${OPENGL_LIBRARY} )
 
 # OSX-specific hacks/fixes
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -84,9 +85,13 @@ set(CORE_SRC
         src/main.cpp
         src/camera/camera.cpp
         src/viewer/viewer.cpp
-        src/fluidSolver/fluidSolver.cpp
+        src/FluidSolver/FluidSolver.cpp
+        src/FluidSolver/Particle.cpp
         src/scene/scene.cpp
         src/geom/geom.cpp
+        src/shaders/shader.cpp
+        src/shaders/texture.cpp
+
 )
 
 add_executable(Thanda ${CORE_SRC})
