@@ -38,6 +38,9 @@ find_package(GLEW)
 find_library(GLFW_LIBRARY "glfw3" HINTS ${GLFW_LIBRARY_DIR})
 find_library(JSONCPP "jsoncpp")
 find_library(OPENVDB "openvdb")
+find_library(ZLIB "z")
+find_library(HALF "half")
+find_library(TBB "tbb")
 
 add_definitions(
         -DTW_STATIC
@@ -47,7 +50,7 @@ add_definitions(
         -D_CRT_SECURE_NO_WARNINGS
 )
 
-set(CORE_LIBS ${GLFW_LIBRARY} ${GLUT_LIBRARY} ${GLEW_LIBRARY} ${JSONCPP} ${OPENVDB} ${OPENGL_LIBRARY} )
+set(CORE_LIBS ${GLFW_LIBRARY} ${GLUT_LIBRARY} ${GLEW_LIBRARY} ${JSONCPP} ${TBB} ${OPENVDB} ${ZLIB} ${HALF} ${OPENGL_LIBRARY} )
 
 # OSX-specific hacks/fixes
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -86,12 +89,20 @@ set(CORE_SRC
         src/main.cpp
         src/camera/camera.cpp
         src/viewer/viewer.cpp
-        src/FluidSolver/FluidSolver.cpp
-        src/FluidSolver/Particle.cpp
+        src/solvers/FluidSolver.hpp
+        src/solvers/FlipSolver.h
+        src/solvers/Particle.hpp
+        src/solvers/FluidSolver.cpp
+        src/solvers/FlipSolver.cpp
+        src/solvers/Particle.cpp
         src/scene/scene.cpp
         src/geom/geom.cpp
         src/shaders/shader.cpp
         src/shaders/texture.cpp
+        src/Grid/grid.h
+        src/Grid/grid.cpp
+        src/Grid/MACGrid.h
+        src/Grid/MACGrid.cpp
 
 )
 

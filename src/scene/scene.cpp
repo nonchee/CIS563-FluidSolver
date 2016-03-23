@@ -1,5 +1,5 @@
 #include "scene.hpp"
-
+#include <openvdb/tools/LevelSetSphere.h>
 
 
 std::vector<float> loadJSON(const char * json_file_path) {
@@ -46,12 +46,36 @@ std::vector<float> loadJSON(const char * json_file_path) {
     
 }
 
-
 void exportToHoudini() {
     
-    //openvdb::initialize();
-    std::cout << " exporting to houdini!" << std::endl;
+    openvdb::initialize();
     
+    
+    std::cout << " Exporting to VDB!" << std::endl;
+    
+    openvdb::FloatGrid::Ptr grid =
+        openvdb::tools::createLevelSetSphere<openvdb::FloatGrid>(50.0,
+                                                                 openvdb::Vec3f(1.5, 2, 3),
+                                                                /*voxel size=*/0.5,
+                                                                 /*width=*/4.0);
+
+    // Create a VDB file object.
+    openvdb::io::File file("../vdbfiles/flippity.vdb");
+    
+    // Add the grid pointer to a container.
+    openvdb::GridPtrVec grids;
+    grids.push_back(grid);
+    // Write out the contents of the container.
+    file.write(grids);
+    file.close();
     
     
 }
+
+
+
+
+
+
+
+
