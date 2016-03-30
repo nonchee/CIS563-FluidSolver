@@ -32,7 +32,6 @@ std::vector<float> loadJSON(const char * json_file_path) {
         return jsonSceneParameters;
     }
     
-    
     jsonSceneParameters.push_back((root["containerDim"]["scaleX"]).asFloat());
     jsonSceneParameters.push_back((root["containerDim"]["scaleY"]).asFloat());
     jsonSceneParameters.push_back((root["containerDim"]["scaleZ"]).asFloat());

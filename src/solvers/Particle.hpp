@@ -30,7 +30,7 @@ public:
     bool operator<(const Particle& that) const;
     
     
-    
+    void updatePositionWithRK2();
 };
 
 #endif

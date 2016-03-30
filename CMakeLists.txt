@@ -96,6 +96,7 @@ set(CORE_SRC
         src/solvers/FlipSolver.cpp
         src/solvers/Particle.cpp
         src/scene/scene.cpp
+        src/geom/geom.hpp
         src/geom/geom.cpp
         src/shaders/shader.cpp
         src/shaders/texture.cpp

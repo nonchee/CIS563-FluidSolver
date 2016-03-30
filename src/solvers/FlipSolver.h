@@ -12,20 +12,21 @@
 #include <vector>
 #include <map>
 
-
 #include <glm/glm.hpp>
 
 #include "FluidSolver.hpp"
 #include "../grid/Grid.h"
 #include "../grid/MACGrid.h"
+#include "../geom/geom.hpp"
 
 class FlipSolver : public FluidSolver {
     
-   
+    Geom* container;
     bool gravityEnabled = true;
     bool withinFluidBounds(float i, float j, float k);
 
 public:
+    FlipSolver(Geom* g);
     
     std::map<int, std::vector<Particle>> particlesByIndex;
     
@@ -45,7 +46,13 @@ public:
     glm::vec3 InterpolateVelocity(const glm::vec3& pos, const MACGrid& mGrid);
     //: Calculate the trilinear interpolation for a velocity value at particle position. Using the worldPos of the particle, find the cell index (i,j,k) in the grid. Note that the grids are staggered differently. So, you will need find the actual gridPos to get the correct index (i,j,k). Using this index, we interpolate separately for each component. Think of how you want to design your function calls for good modularity and code reuse
     
+    void updateGravity();
     void enableGravity();
     void disableGravity();
     
+    void MACGrid2Particle();
+    
 };
+
+
+

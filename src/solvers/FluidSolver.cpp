@@ -113,11 +113,6 @@ void FluidSolver::update(float delta, float boxScaleX, float boxScaleY, float bo
         
         Particle& p = ParticlesContainer[i]; // shortcut
         
-        /*if (gravityEnabled) {
-            p.speed += glm::vec3(0.0f,-9.81f, 0.0f) * (float)delta * 0.5f;
-        }
-        
-        p.pos += p.speed * (float)delta;*/
         
         // Fill the GPU buffer
         g_particule_position_size_data[4*ParticlesCount+0] = p.pos.x;
@@ -125,12 +120,15 @@ void FluidSolver::update(float delta, float boxScaleX, float boxScaleY, float bo
         g_particule_position_size_data[4*ParticlesCount+2] = p.pos.z;
         g_particule_position_size_data[4*ParticlesCount+3] = p.size;
         
-        //collisiondetection
+        
+        g_particule_color_data[4*ParticlesCount+0] = p.r;
+        g_particule_color_data[4*ParticlesCount+1] = p.g;
+        g_particule_color_data[4*ParticlesCount+2] = p.b;
+        g_particule_color_data[4*ParticlesCount+3] = p.a;
+        
+        /*//collisiondetection
         if (p.pos.x > -boxScaleX && p.pos.x < boxScaleX && p.pos.y > -boxScaleY && p.pos.y < boxScaleY) {
-            g_particule_color_data[4*ParticlesCount+0] = p.r;
-            g_particule_color_data[4*ParticlesCount+1] = p.g;
-            g_particule_color_data[4*ParticlesCount+2] = p.b;
-            g_particule_color_data[4*ParticlesCount+3] = p.a;
+            
         }
         
         else{
@@ -138,7 +136,7 @@ void FluidSolver::update(float delta, float boxScaleX, float boxScaleY, float bo
             g_particule_color_data[4*ParticlesCount+1] = 255;
             g_particule_color_data[4*ParticlesCount+2] = p.b;
             g_particule_color_data[4*ParticlesCount+3] = 200;
-        }
+        }*/
         
         p.cameradistance = -1.0f;
         

@@ -31,20 +31,27 @@ glm::mat4 boxScale;
 
 Camera* camera;
 FluidSolver* fluidsolver = new FluidSolver();
-FlipSolver* flipsolver = new FlipSolver();
+Geom* containerGeom;
+FlipSolver* flipsolver;
+
 
 
 void setSceneParameters() {
     std::vector<float> jsonFloats = loadJSON("../src/scene/scene.json");
 
-    //set worldspace bounds of particles
-    flipsolver->setParticleBounds(jsonFloats.at(3), jsonFloats.at(4), jsonFloats.at(5), jsonFloats.at(6));
-    
     //set bounds of box
     boxScaleX = jsonFloats.at(0);
     boxScaleY = jsonFloats.at(1);
     boxScaleZ = jsonFloats.at(2);
     boxScale = glm::scale(glm::mat4(1.0f), glm::vec3(boxScaleX, boxScaleY , boxScaleZ));
+    
+
+    containerGeom = new Geom(boxScaleX, boxScaleY, boxScaleZ);
+    flipsolver = new FlipSolver(containerGeom);
+    
+    //set worldspace bounds of particles
+    flipsolver->setParticleBounds(jsonFloats.at(3), jsonFloats.at(4), jsonFloats.at(5), jsonFloats.at(6));
+    
 }
 
 void checkKeysPressed() {
@@ -64,7 +71,10 @@ void checkKeysPressed() {
 int main( void )
 {
     
+    //set up FLIPsolver from JSON file
     setSceneParameters();
+    
+
     
     window = setUpWindow();
     
@@ -74,9 +84,7 @@ int main( void )
     glGenVertexArrays(1, &VertexArrayID);
     glBindVertexArray(VertexArrayID);
     
-    
     ///////stuff for the particle shader
-    
     // Create and compile our GLSL program from the shaders for the particles
     GLuint programID = LoadShaders( "../src/shaders/Particle.vertexshader", "../src/shaders/Particle.fragmentshader" );
     // Vertex shader
@@ -92,7 +100,7 @@ int main( void )
     
     GLuint gridprogramID = LoadShaders( "../src/shaders/TransformVertexShader.vertexshader", "../src/shaders/ColorFragmentShader.fragmentshader");
     
-    // box vertices
+    // box vertex data
     static const GLfloat g_box_vertex_buffer_data[] = {
         -1.0f,-1.0f,-1.0f, //bottom face
         -1.0f,-1.0f, 1.0f,
@@ -129,41 +137,25 @@ int main( void )
     }
     
     
-    
     GLuint boxvertexbuffer;
     glGenBuffers(1, &boxvertexbuffer);
     glBindBuffer(GL_ARRAY_BUFFER, boxvertexbuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(g_box_vertex_buffer_data), g_box_vertex_buffer_data, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(g_box_vertex_buffer_data),
+                    g_box_vertex_buffer_data, GL_STATIC_DRAW);
     
     GLuint boxcolorbuffer;
     glGenBuffers(1, &boxcolorbuffer);
     glBindBuffer(GL_ARRAY_BUFFER, boxcolorbuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(g_box_color_buffer_data), g_box_color_buffer_data, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(g_box_color_buffer_data),
+                    g_box_color_buffer_data, GL_STATIC_DRAW);
     
-   /* GLuint gridvertexbuffer;
-    glGenBuffers(1, &gridvertexbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, gridvertexbuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(g_grid_vertex_buffer_data), g_grid_vertex_buffer_data, GL_STATIC_DRAW);
-    
-    g_grid_vertex_buffer_data
-    
-    int gridsize = sizeof(g_grid_vertex_buffer_data);
-    
-    GLfloat g_box_color_buffer_data[size];
-    for (int i = 0; i < size; i++) {
-        g_box_color_buffer_data[i] = 0.0f;
-    }
-    
-    GLuint gridcolorbuffer;
-    glGenBuffers(1, &gridcolorbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, gridcolorbuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(g_grid_color_buffer_data), g_grid_color_buffer_data, GL_STATIC_DRAW);
-    */
-
     ///////back to particles
     GLuint Texture = loadDDS("../src/shaders/particle.DDS");
     
+    ///////put all particles on the viewer
     flipsolver->setUpParticleBuffers();
+    
+    //////put all particles in data
     flipsolver->Init();
     
     double lastTime = glfwGetTime();
@@ -179,14 +171,14 @@ int main( void )
         camera->computeMatricesFromInputs();
         glm::mat4 ProjectionMatrix = camera->getProjectionMatrix();
         glm::mat4 ViewMatrix = camera->getViewMatrix();
-        
-       
         glm::vec3 CameraPosition(glm::inverse(ViewMatrix)[3]);
         glm::mat4 ViewProjectionMatrix = ProjectionMatrix * ViewMatrix;
     
-        //flipsolver->update(delta, boxScaleX, boxScaleY, boxScaleZ, CameraPosition);
+        //////update grid from particles, then particles from grid
         flipsolver->FlipUpdate(delta, boxScaleX, boxScaleY, boxScaleZ, CameraPosition);
-        flipsolver->updateParticleBuffers(); //(delta, boxScaleX, boxScaleY, boxScaleZ, CameraPosition);
+        
+        //////update where the particles should draw on the page
+        flipsolver->updateParticleBuffers();
 
         // Use our shader
         glUseProgram(programID);
@@ -196,20 +188,19 @@ int main( void )
         glBindTexture(GL_TEXTURE_2D, Texture);
         glUniform1i(TextureID, 0);
         
-        // Same as the billboards tutorial
+        ////// draw the particles
         glUniform3f(CameraRight_worldspace_ID, ViewMatrix[0][0], ViewMatrix[1][0], ViewMatrix[2][0]);
         glUniform3f(CameraUp_worldspace_ID   , ViewMatrix[0][1], ViewMatrix[1][1], ViewMatrix[2][1]);
         glUniformMatrix4fv(ViewProjMatrixID, 1, GL_FALSE, &ViewProjectionMatrix[0][0]);
         
         flipsolver->drawParticles();
         
-        
-        ////// render the box //////
+        ////// draw the box //////
         glUseProgram(boxprogramID);
         
         // Compute the MVP matrix from keyboard and mouse input
         glm::mat4 MVP = camera->getMVPFromInputs(boxScale);
-        drawBox(MVP, boxprogramID, boxvertexbuffer, boxcolorbuffer);
+        containerGeom->drawBox(MVP, boxprogramID, boxvertexbuffer, boxcolorbuffer);
         
         checkKeysPressed();
         
@@ -217,6 +208,7 @@ int main( void )
         ////// render the MACGrid faces for testing //////
         glUseProgram(gridprogramID);
         glm::mat4 MVPGrid = camera->getMVPFromInputs(boxScale);
+        
         //drawSplattedFaces(MVP, gridprogramID, gridvertexbuffer, gridcolorbuffer);
         
         
@@ -226,8 +218,9 @@ int main( void )
     }
     
     
-    while(glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS && glfwWindowShouldClose(window) == 0 );
-    
+    while(glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS
+          && glfwWindowShouldClose(window) == 0 );
+
     flipsolver->deleteVBOS();
     glDeleteProgram(programID);
     glDeleteTextures(1, &TextureID);

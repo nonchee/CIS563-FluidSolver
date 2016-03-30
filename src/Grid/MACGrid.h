@@ -12,7 +12,7 @@
 class MACGrid {
     
 public:
-    MACGrid(Grid* U, Grid* V, Grid* W, Grid* P);
+    MACGrid(Grid<float>* U, Grid<float>* V, Grid<float>* W, Grid<float>* P);
     MACGrid(float fluidBoundX, float fluidBoundY, float fluidBoundZ, float gridCellSidelengths);
     
     int dimX ;
@@ -20,10 +20,11 @@ public:
     int dimZ ;
     float cellSidelength;
     
-    Grid* gridU;
-    Grid* gridV;
-    Grid* gridW;
-    Grid* gridP;
+    Grid<float>* gridU;    //u
+    Grid<float>* gridV;    //v
+    Grid<float>* gridW;    //w
+    Grid<float>* gridP;    //pressure
+    Grid<int>* gridType; //marker
     
     int getGridIndex(glm::vec3 position);
     
@@ -36,7 +37,9 @@ public:
     void colorSplattedFaces(Particle p); 
 
     void storeParticlesToGrid(std::map<int, std::vector<Particle>>* particlesByIndex);
-   //void storeParticleToGrid(Particle p);
-    void resetToZero(int size);
+    
+    void resetToZero();
+    
+    glm::vec3 giveNewVelocity(Particle p);
     
 };

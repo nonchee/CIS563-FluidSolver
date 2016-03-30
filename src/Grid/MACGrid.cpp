@@ -3,26 +3,28 @@
 #include "../solvers/Particle.hpp"
 
 
-MACGrid::MACGrid(Grid* U, Grid* V, Grid* W, Grid* P) {
+MACGrid::MACGrid(Grid<float>* U, Grid<float>* V, Grid<float>* W, Grid<float>* P) {
     gridU = U;
     gridV = V;
     gridW = W;
     gridP = P;
+
 }
 
-MACGrid::MACGrid(float fluidBoundX, float fluidBoundY, float fluidBoundZ, float gridCellSidelength) {
+MACGrid::MACGrid(float boxBoundX, float boxBoundY, float boxBoundZ, float gridCellSidelength) {
     
     cellSidelength = gridCellSidelength;
     
     //set number of grid cells in each direction
-    dimX = ceil(fluidBoundX / gridCellSidelength);
-    dimY = ceil(fluidBoundY / gridCellSidelength);
-    dimZ = ceil(fluidBoundZ / gridCellSidelength);
+    dimX = ceil(boxBoundX / gridCellSidelength);
+    dimY = ceil(boxBoundY / gridCellSidelength);
+    dimZ = ceil(boxBoundZ / gridCellSidelength);
     
-    gridU = new Grid(dimX + 1, dimY, dimZ, cellSidelength);
-    gridV = new Grid(dimX, dimY + 1, dimZ, cellSidelength);
-    gridW = new Grid(dimX, dimY, dimZ + 1, cellSidelength);
-    gridP = new Grid(dimX, dimY, dimZ, cellSidelength);
+    gridU = new Grid<float>(dimX + 1, dimY, dimZ, cellSidelength);
+    gridV = new Grid<float>(dimX, dimY + 1, dimZ, cellSidelength);
+    gridW = new Grid<float>(dimX, dimY, dimZ + 1, cellSidelength);
+    gridP = new Grid<float>(dimX, dimY, dimZ, cellSidelength);
+    gridType = new Grid<int>(dimX, dimY, dimZ, cellSidelength);
 }
 
 
@@ -41,11 +43,13 @@ int MACGrid::getGridIndex(glm::vec3 position) {
     
 }
 
-void MACGrid::resetToZero(int size) {
-    gridU->resetToZero(size);
-    gridV->resetToZero(size);
-    gridW->resetToZero(size);
+void MACGrid::resetToZero() {
+    gridU->resetToZero();
+    gridV->resetToZero();
+    gridW->resetToZero();
 }
+
+
 
 void MACGrid::storeParticlesToGrid(std::map<int, std::vector<Particle>>* particlesByIndex){
     
@@ -81,6 +85,27 @@ glm::vec3 MACGrid::interpolateFromGrid(glm::vec3 pos) const {
     float velZ = gridW->trilinearlyInterpolate(pos, glm::vec3(0, 0.5, 0)).z;
     
     return glm::vec3(velX, velY, velZ);
+    
+}
+
+glm::vec3 MACGrid::giveNewVelocity(Particle p) {
+    
+
+    
+    //for now testing with gridV only
+    
+
+   
+    glm::vec3 PICvel = interpolateFromGrid(p.pos);
+    
+    //calculate change in velocties
+    glm::vec3 FLIPvel = glm::vec3(); 
+    
+    //interpolate !
+    
+    //FLIPvel = glm::vec3(0.95 * FLIPvel.x, 0.95 * FLIPvel.y, 0.95 * FLIPvel.z);
+    //PICvel = glm::vec3(0.05 * PICvel.x, 0.05 * PICvel.y, 0.05 * PICvel.z);
+    return FLIPvel + PICvel;
     
 }
 
