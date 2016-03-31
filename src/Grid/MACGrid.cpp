@@ -24,7 +24,7 @@ MACGrid::MACGrid(float boxBoundX, float boxBoundY, float boxBoundZ, float gridCe
     gridV = new Grid<float>(dimX, dimY + 1, dimZ, cellSidelength);
     gridW = new Grid<float>(dimX, dimY, dimZ + 1, cellSidelength);
     gridP = new Grid<float>(dimX, dimY, dimZ, cellSidelength);
-    gridType = new Grid<int>(dimX, dimY, dimZ, cellSidelength);
+    gridMarker = new Grid<int>(dimX, dimY, dimZ, cellSidelength);
 }
 
 
@@ -53,26 +53,23 @@ void MACGrid::resetToZero() {
 
 void MACGrid::storeParticlesToGrid(std::map<int, std::vector<Particle>>* particlesByIndex){
     
-    gridU->storeParticlesToGrid(particlesByIndex, glm::vec3(0, 0.5, 0.5));
+    /*gridU->storeParticlesToGrid(particlesByIndex, glm::vec3(0, 0.5, 0.5));
     gridV->storeParticlesToGrid(particlesByIndex, glm::vec3(0.5, 0, 0.5));
     gridW->storeParticlesToGrid(particlesByIndex, glm::vec3(0.5, 0.5, 0));
     gridP->storeParticlesToGrid(particlesByIndex, glm::vec3(0.5, 0.5, 0.5));
-
+*/
 }
 
-// for (i = 0; i < )
-// (i - 1, j, z);
-// (i, j, k
+
 //take weighted average with kernel function
 //assign that particle's velocity to the MAC grid
 //mGrid->assignVelocityToCell(i, j, k, weightedVelocity);
 //mGrid();
 void MACGrid::storeParticleVelocityToGrid(Particle p){
     
-    gridU->storeParticleVelocityToGrid(p, glm::vec3(0, 0.5, 0.5), glm::vec3(1, 0, 0));
-    gridV->storeParticleVelocityToGrid(p, glm::vec3(0.5, 0, 0.5), glm::vec3(0, 1, 0));
-    gridW->storeParticleVelocityToGrid(p, glm::vec3(0.5, 0.5, 0), glm::vec3(0, 0, 1));
-    //gridP->storeParticleToGrid(p, glm::vec3(0.5, 0.5, 0.5), glm::vec3(1, 1, 1));
+    //gridU->storeParticleVelocityToGrid(p, glm::vec3(0, 0.5, 0.5), glm::vec3(1, 0, 0));
+    gridV->storeParticleVelocityToGrid(p, glm::vec3(0.5, 0, 0.5), glm::vec3(0, 1, 0), W);
+    //gridW->storeParticleVelocityToGrid(p, glm::vec3(0.5, 0.5, 0), glm::vec3(0, 0, 1));
     
 }
 
@@ -80,9 +77,9 @@ void MACGrid::storeParticleVelocityToGrid(Particle p){
 //call this from flipsolver
 glm::vec3 MACGrid::interpolateFromGrid(glm::vec3 pos) const {
     
-    float velX = gridU->trilinearlyInterpolate(pos, glm::vec3(0, 0.5, 0.5)).x;
-    float velY = gridV->trilinearlyInterpolate(pos, glm::vec3(0.5, 0, 0.5)).y;
-    float velZ = gridW->trilinearlyInterpolate(pos, glm::vec3(0, 0.5, 0)).z;
+    float velX = gridU->trilinearlyInterpolate(pos, glm::vec3(0, 0.5, 0.5));
+    float velY = gridV->trilinearlyInterpolate(pos, glm::vec3(0.5, 0, 0.5));
+    float velZ = gridW->trilinearlyInterpolate(pos, glm::vec3(0, 0.5, 0));
     
     return glm::vec3(velX, velY, velZ);
     
@@ -115,4 +112,14 @@ void MACGrid::colorSplattedFaces(Particle p) {
     gridV->colorSplattedFaces(p);
     gridW->colorSplattedFaces(p); //std::vector neighborhood = getNeighboring
     
+}
+
+void MACGrid::calculateAvgNumberOfParticlesPerGrid() {
+    W = 0.0f;
+    
+    for (int numParticlesInCell : gridMarker->data) {
+        W += numParticlesInCell;
+    }
+    W =  (float) W / (float)(gridMarker->data.size());
+   // std::cout << W << std::endl;
 }

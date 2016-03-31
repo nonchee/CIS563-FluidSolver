@@ -2,9 +2,9 @@
 
 
 
-float fluidBoundX = 3.6;
-float fluidBoundY = 3.6;
-float fluidBoundZ = 3.6;
+float fluidBoundX = 1.8;
+float fluidBoundY = 1.8;
+float fluidBoundZ = 1.8;
 
 
 FlipSolver::FlipSolver(Geom* g) {
@@ -16,7 +16,8 @@ void FlipSolver::ConstructMACGrid() {
     
     //doing this for now lol
     //will fix in json later
-    particleSeparation = 0.9;
+    //this is ratchettttt
+    particleSeparation = 0.6;
     
     //each grid dimension is enough so that a gridcell holds about 8 particles total
     float gridCellSidelength = particleSeparation * 2;
@@ -42,7 +43,7 @@ void FlipSolver::InitializeParticles() {
                     
                     Particle p;
                     
-                    //glm::vec3 jitter = glm::vec3(0.01 * rand(), 0.01 * rand(), 0.01 * rand());
+                    glm::vec3 jitter = glm::vec3(0.01 * rand(), 0.01 * rand(), 0.01 * rand());
                     p.pos = glm::vec3(i, j, k); //+ jitter;
                     p.speed = glm::vec3(0, 0, 0);
                     
@@ -56,15 +57,22 @@ void FlipSolver::InitializeParticles() {
                     //set grid index, also mark gird index
                     p.gridIndex = mGrid->getGridIndex(p.pos);
                     
-                    mGrid->gridType->addValueAt(1, p.gridIndex);
-                    std::cout << " marker grid! " << std::endl;
-                    mGrid->gridType->printContents();
+                    
+                    mGrid->gridMarker->addValueAt(1, p.gridIndex);
+                    //std::cout << glm::to_string(p.pos) << " --> " << p.gridIndex << std::endl;
+                    //
                     
                     ParticlesContainer.push_back(p);
                 }
             }
         }
     }
+    
+    mGrid->gridMarker->printContents("marker grid!");
+    
+    //set the W for kernel weight function
+    mGrid->calculateAvgNumberOfParticlesPerGrid();
+    
 }
 
 
@@ -94,14 +102,13 @@ void FlipSolver::Init() {
 void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY, float boxScaleZ, glm::vec3 CameraPosition) {
     
 
-    /*std::cout << " THIS IS GRIDVVVVV BEFORE PARTICLES ARE STORED " << delta << std::endl;
-    mGrid->gridV->printContents();
-    */
+
+    //mGrid->gridV->printContents("gridV before storing particles");
+    
     //put particle onto grid
     StoreParticleVelocitiesToGrid();
-    /*std::cout << " THIS IS GRIDVVVVV AFTER PARTICLES ARE STORED " << delta << std::endl;
-    mGrid->gridV->printContents();
-    */
+    //mGrid->gridV->printContents("grid V after storing particles");
+    
     
     //extrapolate velocity
     mGrid->gridV->extrapolateVelocities();
@@ -115,7 +122,8 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY, float
     
     //update for gravity, data is now PIC velocities
       //  std::cout << " THIS IS GRIDVVVVV AFTER FORCE IS ADDED " << delta << std::endl;
-    mGrid->gridV->addForce(-.8 * delta);
+    mGrid->gridV->addForce(-9.8 * delta);
+    std::cout << (9.8 * delta) << std::endl;
     //mGrid->gridV->printContents();
 
     //
@@ -228,12 +236,15 @@ bool FlipSolver::withinFluidBounds(float i, float j, float k) {
 //A simple stiff kernel can be used to calculate the weight for the average velocity.
 void FlipSolver::StoreParticleVelocitiesToGrid(){
     
+    //reset macgrid to zero
     mGrid->resetToZero();
+    mGrid->gridV->printContents("grid V reset to zero!");
     
     for (Particle p : ParticlesContainer) {
         mGrid->storeParticleVelocityToGrid(p);
     }
     
+    mGrid->gridV->printContents("particles stored to gridV");
     //mGrid->storeParticlesToGrid(&particlesByIndex);
 
     

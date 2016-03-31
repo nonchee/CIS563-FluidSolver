@@ -19,12 +19,13 @@ public:
     int dimY ;
     int dimZ ;
     float cellSidelength;
+    float W; //avg number of particles per grid, for kernel function
     
     Grid<float>* gridU;    //u
     Grid<float>* gridV;    //v
     Grid<float>* gridW;    //w
     Grid<float>* gridP;    //pressure
-    Grid<int>* gridType; //marker
+    Grid<int>* gridMarker; //marker
     
     int getGridIndex(glm::vec3 position);
     
@@ -41,5 +42,6 @@ public:
     void resetToZero();
     
     glm::vec3 giveNewVelocity(Particle p);
+    void calculateAvgNumberOfParticlesPerGrid();
     
 };

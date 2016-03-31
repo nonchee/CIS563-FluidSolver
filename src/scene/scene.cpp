@@ -15,7 +15,7 @@ std::vector<float> loadJSON(const char * json_file_path) {
             JSONData += "\n" + Line;
         JSONDataStream.close();
     } else{
-        printf("Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", json_file_path);
+        printf("Impossible to open %s. Are you in the right directory ?\n", json_file_path);
         getchar();
         return jsonSceneParameters;
     }
@@ -49,8 +49,7 @@ void exportToHoudini() {
     
     openvdb::initialize();
     
-    
-    std::cout << " Exporting to VDB!" << std::endl;
+    std::cout << " Exporting to VDB! Find it in flippity.vdb" << std::endl;
     
     openvdb::FloatGrid::Ptr grid =
         openvdb::tools::createLevelSetSphere<openvdb::FloatGrid>(50.0,

@@ -1,6 +1,7 @@
 #include "grid.h"
 #include "MACGrid.h"
-
+#include <algorithm>
+#include <vector>
 
 template<typename T>
 Grid<T>::Grid() {
@@ -15,13 +16,27 @@ Grid<T>::Grid(int bx, int by, int bz, float side) {
      dimZ = bz;
      cellSidelength = side;
     
+    int notMaxDim = std::min(dimX, std::min(dimY, dimZ));
+    
+    //will be 1 in the direction that has an extra size
+    //tells use the direction that this grid takes care of
+    //ie a 2 3 2 grid ends up with a glmvec3 0 1 0
+    backwardsDir = glm::vec3(dimX - notMaxDim, dimY - notMaxDim, dimZ - notMaxDim);
+    axis = 0;
+    for (axis = 0; axis < 3; axis++) {
+        if (backwardsDir[axis] == 1) {
+            break;
+        }
+    }
+    
+    
     for (int i = 0; i < dimX * dimY * dimZ; i++) {
         data.push_back(0);
     }
     
 }
 
-template<typename T>
+/*template<typename T>
 void Grid<T>::storeParticlesToGrid(std::map<int,
                                    std::vector<Particle>>* particlesByIndex,
                                    glm::vec3 offset) {
@@ -56,11 +71,33 @@ void Grid<T>::storeParticlesToGrid(std::map<int,
         }
     }
     
-}
+}*/
 
 template<typename T>
-float Grid<T>::getKernelWeight(glm::vec3 offsetParticlePos, glm::vec3 staggeredPos) {
-    /*return 1.0f/glm::distance(offsetParticlePos, staggeredPos);*/
+float Grid<T>::getKernelWeight(float pcomponent, glm::vec3 offsetParticlePos, glm::vec3 staggeredGridPos, float W) {
+    float kerneldist = glm::distance(offsetParticlePos, staggeredGridPos);
+    
+    ///might want to replace this with specific kernel dist
+    /// in the specified direction
+   
+    if (kerneldist > 0) {
+         float hX = pcomponent/kerneldist;
+        if (pcomponent != 0) {
+            std::cout << pcomponent << "  / " << kerneldist << std::endl;
+            std::cout << "hX : " << hX << std::endl;
+        }
+        if (hX >= 0 && hX <= 1) {
+            return (1-hX)/W;
+        }
+        else if (hX >= -1 && hX <= 0) {
+            return (1 + hX)/W;
+        }
+        else {
+            return 0;
+        }
+    }
+    
+    return 1.0f/glm::distance(offsetParticlePos, staggeredGridPos);
 }
 
 template<typename T>
@@ -74,7 +111,8 @@ std::vector<glm::vec3> Grid<T>::getNeighborPositions(glm::vec3 particleIndex, gl
     neighbors.push_back(particleIndex);
     
     bool atbound1Dir1 = glm::dot(particleIndex, -otherDir1) <= 0;
-    bool atbound2Dir1 = glm::dot(particleIndex, otherDir1) >= glm::dot(glm::vec3(dimX, dimY, dimZ), otherDir1);
+    bool atbound2Dir1 = glm::dot(particleIndex, otherDir1) >=
+            glm::dot(glm::vec3(dimX, dimY, dimZ), otherDir1);
     
     if(!atbound1Dir1) {
         neighbors.push_back(particleIndex - otherDir1);
@@ -214,44 +252,45 @@ int Grid<T>::getGridIndexFromIJK(glm::vec3 IJK) {
     
 }
 
-
-//TODO GOTTA TEST THIS
-//returns a vec3 of the velocity
-template<typename T>
-glm::vec3 Grid<T>::trilinearlyInterpolate(glm::vec3 pos, glm::vec3 offset) {
-
-    glm::vec3 interpolatedVel;
-    
-    //get offset to put into gridSpace
-    glm::vec3 offsetPos = pos + offset;
-    
+glm::vec3 posToGridIJK(glm::vec3 pos, float cellSidelength){
     //because a nancy never forgets
     float epsilon = 0.001;
-
+    
     //find the i, j, and k indices
     int xidx = (pos.x + epsilon)/cellSidelength;
     int yidx = (pos.y + epsilon)/cellSidelength;
     int zidx = (pos.z + epsilon)/cellSidelength;
     
-    glm::vec3 indices = glm::vec3(xidx, yidx, zidx);
+    return glm::vec3(xidx, yidx, zidx);
+}
+
+
+//TODO GOTTA TEST THIS
+//returns a vec3 of the velocity
+template<typename T>
+float Grid<T>::trilinearlyInterpolate(glm::vec3 pos, glm::vec3 offset) {
+
+    float interpolatedVel;
     
-    for (int i = 0; i < 3; i++) {
+    //get offset to put into gridSpace
+    glm::vec3 offsetPos = pos + offset;
+    glm::vec3 gridIndices = posToGridIJK(offsetPos, cellSidelength);
+    
+
+    //i, j, k, is the forward direction, and otherIdx(i, j, k)
+    //is the backward direction;
+    glm::vec3 prevIndices = gridIndices;
+    prevIndices = gridIndices - backwardsDir;
+    float backwardsVal = (*this)(prevIndices.x, prevIndices.y, prevIndices.z);
+    float forwardsVal = (*this)(gridIndices.x, gridIndices.y, gridIndices.z);
+    
+
+    
+    //get weight of position (in grid space) between idx-1 and idx
+    float weightX = offsetPos[axis] - prevIndices[axis];
         
-        //get closest idx on axis
-        int idx = indices[i];
-        
-        //i, j, k, is the forward direction, and otherIdx(i, j, k) is the backward direction;
-        glm::vec3 otherIdx = indices;
-        otherIdx[i] = indices[i] - 1;
-        
-        //get weight of position (in grid space) between idx-1 and idx
-        float weightX = offsetPos[i]  -  otherIdx[i];
-        
-        //interpolate the velocity!
-        interpolatedVel[i] =
-                weightX * ((*this)(otherIdx.x, otherIdx.y, otherIdx.z))
-                + (1 - weightX) * ((*this)(indices.x, indices.y, indices.z));
-    }
+    //interpolate the velocity!
+    interpolatedVel = weightX * backwardsVal + (1 - weightX) * forwardsVal;
 
     //test to make sure this is some sort of (x, 0, 0) (0, y, 0) or (0, 0, z)
     return interpolatedVel;
@@ -285,32 +324,53 @@ glm::vec3 Grid<T>::getGridIndices(glm::vec3 pos) {
 }
 
 
-template<typename T>
-void Grid<T>::storeParticleVelocityToGrid(Particle p, glm::vec3 offset, glm::vec3 direction) {
-    
-    //calculate i j k on this staggered grid
-    glm::vec3 gridIndices = getGridIndices(p.pos);
-
-    
-    float pcomponent = glm::dot(direction, p.speed);
-    
-    std::vector<glm::vec3> neighborPositions = getNeighborPositions(gridIndices, direction);
-    
- 
-    for (glm::vec3 neighborPos : neighborPositions) {
-
-        float kernelWeight = getKernelWeight(p.pos - offset, neighborPos);
-        int neighborIndex = getGridIndexFromIJK(neighborPos);
-        //std::cout << " me index " << glm::to_string(gridIndices) << " " << p.gridIndex << std::endl;
-        //std::cout << "neighbor index " << neighborIndex << std::endl;
-        if (neighborIndex < data.size()) {
-            data.at(neighborIndex) += kernelWeight * pcomponent;
-        }
+void printNeighbors(std::vector<glm::vec3> neighborPositions) {
+    std::cout << "my neighbors" << std::endl;
+    for (glm::vec3 neighbor : neighborPositions) {
+        std::cout << glm::to_string(neighbor) << std::endl;
     }
-    
-
+    std::cout << std::endl;
     
 }
+
+void printVector(glm::vec3 index, std::string message) {
+    std::cout << message << " : " << glm::to_string(index) << std::endl;
+    
+}
+
+
+template<typename T>
+void Grid<T>::storeParticleVelocityToGrid(Particle p, glm::vec3 offset, glm::vec3 direction, float W) {
+    
+    //calculate IJK on staggered grid
+    glm::vec3 gridIndices = getGridIndices(p.pos);
+    
+    //get direction of p that we want to splat
+    float pcomponent = glm::dot(direction, p.speed);
+    if (pcomponent != 0) {
+        std::cout << pcomponent << " WOOOO  " << std::endl; 
+    }
+    
+    //get neighbors
+    std::vector<glm::vec3> gridNeighbors = getNeighborPositions(gridIndices, direction);
+
+    //splat onto neighbors
+    for (glm::vec3 gridIJK : gridNeighbors) {
+        int gridIndexInArray = getGridIndexFromIJK(gridIJK); //kernelweight
+        float kernelWeight = getKernelWeight(pcomponent, p.pos - offset, gridIJK, W); //send offsetPos, grid
+        if (kernelWeight >0) {
+            std::cout << "kernel weight " << kernelWeight << std::endl;
+            
+        }
+        if (gridIndexInArray < data.size()) {
+            data.at(gridIndexInArray) += kernelWeight * pcomponent; //add to each neighbor
+        }
+    }
+    std::cout << std::endl;
+
+}
+
+
 
 template<typename T>
 void Grid<T>::colorSplattedFaces(Particle p) {
@@ -334,26 +394,66 @@ template<typename T>
 void Grid<T>::addValueAt(float value, int gridIndex) {
     
     if (gridIndex < data.size()) {
-        data[gridIndex] = value;
+        data[gridIndex] += value;
     }
 
 }
 
 template<typename T>
-void Grid<T>::printContents() {
+void Grid<T>::printContents(std::string message) {
     
-    std::cout << "--- printing " << dimX << " x " << dimY << " x " << dimZ << " grid---" << std::endl;
+    std::cout << message << std::endl;
+    std::cout << dimX << " x " << dimY << " x " << dimZ << std::endl;
     
-    for (int i = 0; i < data.size(); i++) {
-        std::cout << data[i]<< " ";
-        if (i % dimY == 0) {
-            std::cout <<std::endl;
-        }
-        
-        if (i % (dimY * dimZ) == 0)  {
+    int largerDim = dimX;
+    switch(axis) {
+        case 1: largerDim = dimY; break;
+        case 2: largerDim = dimZ; break;
+        default: dimX;
+    }
+    
+
+    for (int i = data.size() - dimX; i >= 0; i++) {
+        if (i % dimX == 0) {
             std::cout << std::endl;
         }
+        
+        std::cout << "i: " << i << "  "<< data[i] << " " ;
+        
+        if (i > 0 && ((i + 1) % dimX == 0)) {
+            i -= (dimX + 2);
+        }
+        
     }
+    
+/*std::vector<std::vector<int>> toPrint;
+
+    
+    for (int i = 0; i < data.size(); i++) {
+        std::vector<int> printRow;
+        
+        if (i > 0 && (i % largerDim == 0)) {
+           // toPrint.push_back(printRow);
+           // printRow.clear();
+            std::cout << std::endl;
+        }
+        
+        if (i > 0 && i % (dimY * dimZ) == 0)  {
+            std::cout << std::endl;
+        }
+        
+        //std::cout << i << ": " << data[i] <<" " << dimX << " " << (i % dimY) << " " << (i % dimZ);
+        //printRow.push_back(data[i]);
+        std::cout << i << ": " << data[i] << "   ";
+        
+    }
+    
+    /*for (int i = 0; i < toPrint.size(); i++) {
+        std::vector<int> printRow = toPrint[i];
+        for (int j = 0; j < printRow.size(); j++) {
+            std::cout << printRow[j] << " " << std::endl;
+        }
+    }*/
     
     std::cout << std::endl << "--- end of grid ---" << std::endl;
 }
@@ -367,6 +467,20 @@ void Grid<T>::extrapolateVelocities() {
                 find averageGridVelocity from neighbor cells*/
     }
 }
+
+//definition of class template functions
+
+template<typename T>
+inline
+void Grid<T>::resetToZero() {
+    data.clear();
+    
+    for (int i= 0; i < dimX * dimY * dimZ; i++) {
+        data.push_back(0);
+    }
+}
+
+
 
 
 //tells compiler ahead of time what classes will be used

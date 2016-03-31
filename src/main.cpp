@@ -40,9 +40,9 @@ void setSceneParameters() {
     std::vector<float> jsonFloats = loadJSON("../src/scene/scene.json");
 
     //set bounds of box
-    boxScaleX = jsonFloats.at(0);
-    boxScaleY = jsonFloats.at(1);
-    boxScaleZ = jsonFloats.at(2);
+    boxScaleX = 1.8; //jsonFloats.at(0);
+    boxScaleY = 1.8; //jsonFloats.at(1);
+    boxScaleZ = 1.8; //jsonFloats.at(2);
     boxScale = glm::scale(glm::mat4(1.0f), glm::vec3(boxScaleX, boxScaleY , boxScaleZ));
     
 
