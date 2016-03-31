@@ -50,6 +50,11 @@ void MACGrid::resetToZero() {
 }
 
 
+void MACGrid::extrapolateVelocities() {
+
+    gridV->extrapolateVelocities(gridMarker); //, <#int j#>, <#int k#>
+}
+
 
 void MACGrid::storeParticlesToGrid(std::map<int, std::vector<Particle>>* particlesByIndex){
     

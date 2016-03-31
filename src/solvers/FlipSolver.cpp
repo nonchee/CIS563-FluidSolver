@@ -102,19 +102,15 @@ void FlipSolver::Init() {
 void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY, float boxScaleZ, glm::vec3 CameraPosition) {
     
 
-
-    //mGrid->gridV->printContents("gridV before storing particles");
-    
     //put particle onto grid
     StoreParticleVelocitiesToGrid();
-    //mGrid->gridV->printContents("grid V after storing particles");
     
     
-    //extrapolate velocity
-    mGrid->gridV->extrapolateVelocities();
 
-                
-                
+    //extrapolate velocities
+    mGrid->extrapolateVelocities();   //markerGrid.data());
+
+    
     //save old gridV
     std::vector<float> deltaU(mGrid->gridU->data);
     std::vector<float> deltaV(mGrid->gridV->data);
@@ -236,11 +232,12 @@ bool FlipSolver::withinFluidBounds(float i, float j, float k) {
 //A simple stiff kernel can be used to calculate the weight for the average velocity.
 void FlipSolver::StoreParticleVelocitiesToGrid(){
     
-    //reset macgrid to zero
+    mGrid->gridMarker->resetToZero(); // macgrid to zero
     mGrid->resetToZero();
     mGrid->gridV->printContents("grid V reset to zero!");
     
     for (Particle p : ParticlesContainer) {
+        mGrid->gridMarker->addValueAt(1, p.gridIndex);
         mGrid->storeParticleVelocityToGrid(p);
     }
     

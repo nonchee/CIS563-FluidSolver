@@ -101,6 +101,7 @@ float Grid<T>::getKernelWeight(float pcomponent, glm::vec3 offsetParticlePos, gl
 }
 
 template<typename T>
+//give grid direction to check bounds
 std::vector<glm::vec3> Grid<T>::getNeighborPositions(glm::vec3 particleIndex, glm::vec3 dir) {
     
     std::vector<glm::vec3> neighbors;
@@ -265,16 +266,64 @@ glm::vec3 posToGridIJK(glm::vec3 pos, float cellSidelength){
 }
 
 
-//TODO GOTTA TEST THIS
-//returns a vec3 of the velocity
+//trilinearly interpolate for each value
 template<typename T>
 float Grid<T>::trilinearlyInterpolate(glm::vec3 pos, glm::vec3 offset) {
-
     float interpolatedVel;
     
     //get offset to put into gridSpace
     glm::vec3 offsetPos = pos + offset;
+    
+    //because a nancy never forgets
+    float epsilon = 0.001;
+    
+    //find the i, j, and k indices
+    int xidx = (pos.x + epsilon)/cellSidelength;
+    int yidx = (pos.y + epsilon)/cellSidelength;
+    int zidx = (pos.z + epsilon)/cellSidelength;
+    
+    glm::vec3 indices = glm::vec3(xidx, yidx, zidx);
+    
+    for (int i = 0; i < 3; i++) {
+        
+        //get closest idx on axis
+        int idx = indices[i];
+        
+        //i, j, k, is the prior to direction, and otherIdx(i, j, k) is the before direction;
+        glm::vec3 otherIdx = indices;
+        otherIdx[i] = indices[i] + 1;
+        
+        //get weight of position (in grid space) between idx-1 and idx
+        float weightX = offsetPos[i]  -  otherIdx[i];
+        
+        //interpolate the velocity!
+        interpolatedVel = weightX * ((*this)(otherIdx.x, otherIdx.y, otherIdx.z))
+        + (1 - weightX) * ((*this)(indices.x, indices.y, indices.z));
+    }
+    
+    //test to make sure this is some sort of (x, 0, 0) (0, y, 0) or (0, 0, z)
+    return interpolatedVel;
+    
+    
+    /*float interpolatedVel;
+    
+    //get offset to put into gridSpace
+    glm::vec3 offsetPos = pos + offset;
     glm::vec3 gridIndices = posToGridIJK(offsetPos, cellSidelength);
+    
+    
+    int i = floor(offsetPos.x);
+    int j = floor(offsetPos.y);
+    int k = floor(offsetPos.z);
+    
+    /*return (i+1-offsetPos.x) * (j+1-offsetPos.y) * (k+1-offsetPos.z) * cell(i, j, k).u[index] +
+    (x-i) * (j+1-y) * (k+1-z) * cell(i+1, j, k).u[index] +
+    (i+1-x) * (y-j) * (k+1-z) * cell(i, j+1, k).u[index] +
+    (x-i) * (y-j) * (k+1-z) * cell(i+1, j+1, k).u[index] +
+    (i+1-x) * (j+1-y) * (z-k) * cell(i, j, k+1).u[index] +
+    (x-i) * (j+1-y) * (z-k) * cell(i+1, j, k+1).u[index] +
+    (i+1-x) * (y-j) * (z-k) * cell(i, j+1, k+1).u[index] +
+    (x-i) * (y-j) * (z-k) * cell(i+1, j+1, k+1).u[index];
     
 
     //i, j, k, is the forward direction, and otherIdx(i, j, k)
@@ -293,18 +342,18 @@ float Grid<T>::trilinearlyInterpolate(glm::vec3 pos, glm::vec3 offset) {
     interpolatedVel = weightX * backwardsVal + (1 - weightX) * forwardsVal;
 
     //test to make sure this is some sort of (x, 0, 0) (0, y, 0) or (0, 0, z)
-    return interpolatedVel;
+    return interpolatedVel;*/
 
 }
 
 template<typename T>
 float Grid<T>::operator()(int i, int j, int k) {
+
+   
     if (k*dimX*dimY + j*dimX + i >= data.size()) {
         return 0;
     }
-    else {
-        return data.at(k * dimX * dimY + j + dimX + i);
-    }
+    else  {   return data.at(k * dimX * dimY + j * dimX + i);    }
 }
 
 
@@ -347,9 +396,7 @@ void Grid<T>::storeParticleVelocityToGrid(Particle p, glm::vec3 offset, glm::vec
     
     //get direction of p that we want to splat
     float pcomponent = glm::dot(direction, p.speed);
-    if (pcomponent != 0) {
-        std::cout << pcomponent << " WOOOO  " << std::endl; 
-    }
+    /*if (pcomponent != 0) { std::cout << pcomponent << " WOOOO  " << std::endl;  }*/
     
     //get neighbors
     std::vector<glm::vec3> gridNeighbors = getNeighborPositions(gridIndices, direction);
@@ -426,7 +473,7 @@ void Grid<T>::printContents(std::string message) {
         
     }
     
-/*std::vector<std::vector<int>> toPrint;
+    /*std::vector<std::vector<int>> toPrint;
 
     
     for (int i = 0; i < data.size(); i++) {
@@ -458,15 +505,45 @@ void Grid<T>::printContents(std::string message) {
     std::cout << std::endl << "--- end of grid ---" << std::endl;
 }
 
+
 template<typename T>
-void Grid<T>::extrapolateVelocities() {
-    for (float cell : data) {
-        /*If (g is solidOrEmptyMark AND g is not fluidMark)
-        foreach face of g, do //neighboring cell
-            If neighourGridCells for any face has fluidMark
-                find averageGridVelocity from neighbor cells*/
+void Grid<T>::extrapolateVelocities(Grid<int>* marker) {
+    std::cout << "extrapolatin'!" << std::endl;
+
+    
+    for (int i = 0; i < dimX; i++) {
+        for (int j = 0; j < dimY; j++) {
+            for (int k = 0; k < dimZ + 1; k++) {
+               
+                //if empty
+                if ((*marker)(i, j, k) == 0) {
+                    
+                    float avgVel;
+                    int gridIndex = getGridIndexFromIJK(glm::vec3(i, j, k));
+                    
+                    std::vector<glm::vec3> neighbors =
+                        getNeighborPositions(glm::vec3(i, j, k), backwardsDir);
+                    
+                    //loop through neighbors
+                    for (glm::vec3 neighbor : neighbors) {
+                        
+                        int numFluidParticles = (*marker)(neighbor.x, neighbor.y, neighbor.z) ;
+                        int neighborIndex = getGridIndexFromIJK(neighbor);
+                        if (numFluidParticles> 0) {
+                            //if a fluid exists there, add to running average
+                            avgVel += data.at(neighborIndex)/numFluidParticles;
+                        }
+                    }
+                    
+                    if (gridIndex < data.size()) {
+                        data.at(gridIndex) = avgVel;   
+                    }
+                }
+            }
+        }
     }
 }
+
 
 //definition of class template functions
 

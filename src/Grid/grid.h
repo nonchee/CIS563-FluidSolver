@@ -40,18 +40,27 @@ public:
     float getKernelWeight(float pcomponent, glm::vec3 offsetParticlePos, glm::vec3 staggeredPos, float W) ;
     
     std::vector<glm::vec3> getNeighborPositions(glm::vec3 particleIndex, glm::vec3 direction);
+    
     void resetToZero();
     void storeParticleVelocityToGrid(Particle p, glm::vec3 offset, glm::vec3 direction, float W);
     glm::vec3 getGridIndices(glm::vec3 pos);
     void colorSplattedFaces(Particle p);
     
+    //extrapolation
+    void extrapolateVelocities(Grid<int>* marker); //(int i, int j, int k);
+    
+    //force resoltion
     void addForce(float f);
-    void addValueAt(float value, int gridIndex); 
+    void addValueAt(float value, int gridIndex);
+    
+    //pressure solving
+    //void lol
     
     //for debugging
     void printContents(std::string message);
 
-    void extrapolateVelocities(); 
+    //void extrapolateVelocities();
+    //void extrapolateToCell(int i);
 
     
 };

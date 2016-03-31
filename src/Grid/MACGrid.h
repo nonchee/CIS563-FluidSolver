@@ -44,4 +44,6 @@ public:
     glm::vec3 giveNewVelocity(Particle p);
     void calculateAvgNumberOfParticlesPerGrid();
     
+    void extrapolateVelocities();
+    
 };
