@@ -133,7 +133,7 @@ int main( void )
     
     GLfloat g_box_color_buffer_data[size];
     for (int i = 0; i < size; i++) {
-        g_box_color_buffer_data[i] = 0.0f;
+        g_box_color_buffer_data[i] = 1.0f;
     }
     
     
@@ -162,6 +162,7 @@ int main( void )
     do
     {
         // Clear the screen
+        glClearColor(1, 0.9, 0.8, 0.8);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         double currentTime = glfwGetTime();

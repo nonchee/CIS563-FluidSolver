@@ -81,11 +81,12 @@ float Grid<T>::getKernelWeight(float pcomponent, glm::vec3 offsetParticlePos, gl
     /// in the specified direction
    
     if (kerneldist > 0) {
-         float hX = pcomponent/kerneldist;
-        if (pcomponent != 0) {
-            std::cout << pcomponent << "  / " << kerneldist << std::endl;
-            std::cout << "hX : " << hX << std::endl;
-        }
+       // std::cout << "cell sidelength: " << cellSidelength << std::endl;
+        float hX = kerneldist/ (float) cellSidelength;
+
+       // std::cout << kerneldist << "  / " << kerneldist << std::endl;
+       // std::cout << "hX : " << hX << std::endl;
+        
         if (hX >= 0 && hX <= 1) {
             return (1-hX)/W;
         }
@@ -396,7 +397,11 @@ void Grid<T>::storeParticleVelocityToGrid(Particle p, glm::vec3 offset, glm::vec
     
     //get direction of p that we want to splat
     float pcomponent = glm::dot(direction, p.speed);
-    /*if (pcomponent != 0) { std::cout << pcomponent << " WOOOO  " << std::endl;  }*/
+    if (pcomponent == 0) {
+        return; //if zero then nah
+    }
+    
+    //std::cout << pcomponent << " WOOOO NOT ZERO" << std::endl;
     
     //get neighbors
     std::vector<glm::vec3> gridNeighbors = getNeighborPositions(gridIndices, direction);
@@ -405,15 +410,17 @@ void Grid<T>::storeParticleVelocityToGrid(Particle p, glm::vec3 offset, glm::vec
     for (glm::vec3 gridIJK : gridNeighbors) {
         int gridIndexInArray = getGridIndexFromIJK(gridIJK); //kernelweight
         float kernelWeight = getKernelWeight(pcomponent, p.pos - offset, gridIJK, W); //send offsetPos, grid
-        if (kernelWeight >0) {
+        if (kernelWeight > 0) {
             std::cout << "kernel weight " << kernelWeight << std::endl;
-            
+        }
+        else {
+            std::cout << "zurro: " << kernelWeight << std::endl;
         }
         if (gridIndexInArray < data.size()) {
+           std::cout << "store this" << kernelWeight * pcomponent << std::endl << std::endl;
             data.at(gridIndexInArray) += kernelWeight * pcomponent; //add to each neighbor
         }
     }
-    std::cout << std::endl;
 
 }
 
@@ -508,8 +515,6 @@ void Grid<T>::printContents(std::string message) {
 
 template<typename T>
 void Grid<T>::extrapolateVelocities(Grid<int>* marker) {
-    std::cout << "extrapolatin'!" << std::endl;
-
     
     for (int i = 0; i < dimX; i++) {
         for (int j = 0; j < dimY; j++) {
