@@ -25,8 +25,32 @@ MACGrid::MACGrid(float boxBoundX, float boxBoundY, float boxBoundZ, float gridCe
     gridW = new Grid<float>(dimX, dimY, dimZ + 1, cellSidelength);
     gridP = new Grid<float>(dimX, dimY, dimZ, cellSidelength);
     gridMarker = new Grid<int>(dimX, dimY, dimZ, cellSidelength);
-}
+    
+    /*std::cout << "cell side " << gridCellSidelength << std::endl;
+    std::cout << "grid dims " << dimX << " " << dimY << " " << dimZ << std::endl;
+    std::cout << "box bounds: " << boxBoundX << " " << boxBoundY << " " << boxBoundZ << std::endl;
+    */
+    
+    
+    /*//set gridmarker borders to solid
+    for (int i = 0; i < dimX; i++) {
+        for (int j = 0; j < dimY; j++) {
+            for (int k = 0; k < dimZ; k++) {
+                if (i == dimX - 1 || i == 0 || j == 0 || j == dimY -1 || k == 0 || k == dimZ - 1) {
+                    int id = i + j * dimX + k * dimX * dimY;
+                    std::cout << id << " lol solidddd" << std::endl;
+                    gridMarker->setValueAt(-1, id);
+                }
 
+            }
+        }
+    }
+    */
+    
+}
+void MACGrid::setNumFluidCells(int num) {
+    numFluidCells = num;
+}
 
 int MACGrid::getGridIndex(glm::vec3 position) {
 
@@ -95,9 +119,7 @@ glm::vec3 MACGrid::giveNewVelocity(Particle p) {
 
     
     //for now testing with gridV only
-    
 
-   
     glm::vec3 PICvel = interpolateFromGrid(p.pos);
     
     //calculate change in velocties
@@ -111,13 +133,6 @@ glm::vec3 MACGrid::giveNewVelocity(Particle p) {
     
 }
 
-void MACGrid::colorSplattedFaces(Particle p) {
-    
-    gridU->colorSplattedFaces(p);
-    gridV->colorSplattedFaces(p);
-    gridW->colorSplattedFaces(p); //std::vector neighborhood = getNeighboring
-    
-}
 
 void MACGrid::calculateAvgNumberOfParticlesPerGrid() {
     W = 0.0f;
@@ -127,4 +142,14 @@ void MACGrid::calculateAvgNumberOfParticlesPerGrid() {
     }
     W =  (float) W / (float)(gridMarker->data.size());
    // std::cout << W << std::endl;
+}
+
+
+void MACGrid::printMarker(std::string caption) {
+    std::cout << caption << std::endl;
+    
+    for (int i = 0; i < gridMarker->data.size(); i++) {
+        std::cout << i << " " << gridMarker->data.at(i) << " " << std::endl;
+    }
+    
 }

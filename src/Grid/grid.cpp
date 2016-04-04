@@ -352,9 +352,12 @@ float Grid<T>::operator()(int i, int j, int k) {
 
    
     if (k*dimX*dimY + j*dimX + i >= data.size()) {
+        //std::cout << (k*dimX*dimY + j*dimX + i) << " lol u out of bounds fool " << std::endl;
         return 0;
     }
-    else  {   return data.at(k * dimX * dimY + j * dimX + i);    }
+    else  {
+        return data.at(k * dimX * dimY + j * dimX + i);
+    }
 }
 
 
@@ -411,24 +414,14 @@ void Grid<T>::storeParticleVelocityToGrid(Particle p, glm::vec3 offset, glm::vec
         int gridIndexInArray = getGridIndexFromIJK(gridIJK); //kernelweight
         float kernelWeight = getKernelWeight(pcomponent, p.pos - offset, gridIJK, W); //send offsetPos, grid
         if (kernelWeight > 0) {
-            std::cout << "kernel weight " << kernelWeight << std::endl;
-        }
-        else {
-            std::cout << "zurro: " << kernelWeight << std::endl;
+            //std::cout << "kernel weight " << kernelWeight << std::endl;
         }
         if (gridIndexInArray < data.size()) {
-           std::cout << "store this" << kernelWeight * pcomponent << std::endl << std::endl;
-            data.at(gridIndexInArray) += kernelWeight * pcomponent; //add to each neighbor
+           //std::cout << "store this" << kernelWeight * pcomponent << std::endl << std::endl;
+           data.at(gridIndexInArray) += kernelWeight * pcomponent; //add to each neighbor
         }
     }
 
-}
-
-
-
-template<typename T>
-void Grid<T>::colorSplattedFaces(Particle p) {
-    
 }
 
 
@@ -438,9 +431,6 @@ void Grid<T>::addForce(float f) {
 
     for (int i = 0 ; i < data.size(); i++) {
         data[i] += f;
-        if (data[i] > 100) {
-            std::cout << " WHAT HAPPENED " << std::endl;
-        }
     }
 }
 
@@ -451,6 +441,76 @@ void Grid<T>::addValueAt(float value, int gridIndex) {
         data[gridIndex] += value;
     }
 
+}
+
+
+template<typename T>
+void Grid<T>::setValueAt(float value, int gridIndex) {
+    std::cout << " set value at grid index " << std::endl;
+    if (gridIndex < data.size()) {
+        data[gridIndex] = value;
+    }
+    
+}
+
+
+
+template<typename T>
+void Grid<T>::pressureUpdate(int index, float scale) {
+    //int index = getGridIndexFromIJK(glm::vec3(i, j, k));
+   // int forwardNeighborIndex = index;
+    //int backwardNeighborIndex = index; // - axisValue;
+    //float changeInPressure = data[forwardNeighborIndex] - data[backwardNeighborIndex];
+    data[index] = data[index] - scale;
+}
+
+template<typename T>
+void Grid<T>::pressureUpdate(Grid<float>* gridP) {
+    for (int i = 0; i < dimX; i++) {
+        for (int j = 0; j < dimY; j++) {
+            for (int k= 0; k < dimZ; k++) {
+                
+                glm::vec3 one = glm::vec3(i, j, k);
+                int gridIndex = getGridIndexFromIJK(one);
+                float pressure1 = (*gridP)(i, j, k);
+                
+                glm::vec3 two = one - backwardsDir;
+               // std::cout << "two " << glm::to_string(two) << std::endl;
+                
+                float pressure2 = (*gridP)(two.x, two.y, two.z);
+                float pressurechange = pressure2 - pressure1;
+                /*std::cout << "pressure 1 " << pressure2 << std::endl;
+                std::cout << "pressure 2 " << pressure1 << std::endl;
+                std::cout << "pressure change " << pressurechange << std::endl;
+                */
+                data[gridIndex] -= pressurechange;
+            }
+        }
+    }
+    
+    std::cout << std::endl;
+}
+
+template<typename T>
+float Grid<T>::getDelta(int i, int j, int k) {
+    
+    
+    int index = getGridIndexFromIJK(glm::vec3(i, j, k));
+    if (index >= delta.size()) {
+        //std::cout << index << " was out of delta bounds " << delta.size() << std::endl;
+        return 0;
+    }
+    
+    //std::cout << index<< std::endl;
+    //std::cout << delta.size() << std::endl;
+    return delta[index];
+}
+
+template<typename T>
+void Grid<T>::setDeltas(std::vector<float> calculatedDeltas) {
+    //std::cout << " calculated deltas! " << calculatedDeltas.size() << std::endl;
+    delta = calculatedDeltas;
+    //std::cout << " deltas! " << delta.size() << std::endl;
 }
 
 template<typename T>
@@ -472,7 +532,8 @@ void Grid<T>::printContents(std::string message) {
             std::cout << std::endl;
         }
         
-        std::cout << "i: " << i << "  "<< data[i] << " " ;
+        std::cout << "[" << i << ": "<< data[i] << " ]" ;
+        //std::cout << "[ " << data[i] << " ]" ;
         
         if (i > 0 && ((i + 1) % dimX == 0)) {
             i -= (dimX + 2);

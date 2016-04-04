@@ -18,6 +18,11 @@
 #include "../grid/Grid.h"
 #include "../grid/MACGrid.h"
 #include "../geom/geom.hpp"
+#include <Eigen/Sparse>
+#include <Eigen/IterativeLinearSolvers>
+#include <vector>
+
+//typedef Eigen::Triplet<double> T;
 
 class FlipSolver : public FluidSolver {
     
@@ -33,7 +38,6 @@ public:
     MACGrid* mGrid;
 
     void FlipUpdate(float delta, float boxScaleX, float boxScaleY, float boxScaleZ, glm::vec3 CameraPosition);
-    
 
     
     void Init(); // : Initialize the grid and particle positions and velocities.
@@ -41,16 +45,29 @@ public:
     void ConstructMACGrid(); //Create the MAC grid
     
     void StoreParticleVelocitiesToGrid();
-    
-    //: This function will calculate a weighted average of the particles' velocities in the neighborhood (define a neighborhood of 1 cell width) and store these values on corresponding grid cells. A simple stiff kernel can be used to calculate the weight for the average velocity.
     glm::vec3 InterpolateVelocity(const glm::vec3& pos, const MACGrid& mGrid);
-    //: Calculate the trilinear interpolation for a velocity value at particle position. Using the worldPos of the particle, find the cell index (i,j,k) in the grid. Note that the grids are staggered differently. So, you will need find the actual gridPos to get the correct index (i,j,k). Using this index, we interpolate separately for each component. Think of how you want to design your function calls for good modularity and code reuse
+    void MACGrid2Particle();
+    
     
     void updateGravity();
     void enableGravity();
     void disableGravity();
     
-    void MACGrid2Particle();
+ 
+    bool isSolid(int i, int j, int k);
+    bool isFluid(int i , int j , int k);
+    bool outOfBounds(int i, int j, int k);
+    
+    int insertCoeff(int id, int i, int j, int k,
+                std::vector<Eigen::Triplet<float>>& coeffs);
+    int countFluidCells();
+    
+    void buildA(Eigen::SparseMatrix<float>& A, std::vector<Eigen::Triplet<float> >& coeffs);
+    void buildb(Eigen::VectorXf& b);
+    void PressureSolve(float dt);
+    //void PressureUpdate(Eigen::SparseMatrix<float>& A, float dt);
+    void PressureUpdate(Eigen::SparseMatrix<float> &A,Eigen::VectorXf &p, float dt);
+
     
 };
 

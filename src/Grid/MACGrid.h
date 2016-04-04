@@ -15,6 +15,8 @@ public:
     MACGrid(Grid<float>* U, Grid<float>* V, Grid<float>* W, Grid<float>* P);
     MACGrid(float fluidBoundX, float fluidBoundY, float fluidBoundZ, float gridCellSidelengths);
     
+    int particleCount; 
+    
     int dimX ;
     int dimY ;
     int dimZ ;
@@ -25,7 +27,9 @@ public:
     Grid<float>* gridV;    //v
     Grid<float>* gridW;    //w
     Grid<float>* gridP;    //pressure
-    Grid<int>* gridMarker; //marker
+    Grid<int>* gridMarker; //markerGrid<float> gridDiv"
+    int numFluidCells;
+    void setNumFluidCells(int num);
     
     int getGridIndex(glm::vec3 position);
     
@@ -45,5 +49,6 @@ public:
     void calculateAvgNumberOfParticlesPerGrid();
     
     void extrapolateVelocities();
+    void printMarker(std::string caption);
     
 };
