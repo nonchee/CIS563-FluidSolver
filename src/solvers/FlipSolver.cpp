@@ -20,21 +20,27 @@ void FlipSolver::ConstructMACGrid() {
     
     //each grid dimension is enough so that a gridcell holds about 8 particles total
     float gridCellSidelength = particleSeparation * 2;
+    
+    std::cout << "aaaaaaagh" << std::endl;
+    std::cout << container->boxBoundX << std::endl;
+    std::cout << container->boxBoundY << std::endl;
+    std::cout <<  container->boxBoundZ << std::endl;
    
     //construct a MAC grid out of container dimensions
-    //mGrid = new MACGrid(fluidBoundX, fluidBoundY, fluidBoundZ, gridCellSidelength);
     mGrid = new MACGrid(container->boxBoundX,
                         container->boxBoundY,
                         container->boxBoundZ,
                         gridCellSidelength);
-    
-    //mGrid->printMarker("no fluid marker");
-    //mGrid->gridMarker->printContents("nofluid marker");
 }
 
 void FlipSolver::InitializeParticles() {
     //IT WAS FLOATING POINT ERRORS THE WHOLE TIME
     float epsilon = 0.001;
+    
+    std::cout << " why are you outside your container" << std::endl;
+    std::cout << particleBoundX << std::endl;
+    std::cout << particleBoundY << std::endl;
+    std::cout << particleBoundZ << std::endl;
     
     //9 total particles along each axis
     for (float i = 0; i + epsilon < particleBoundX; i+= particleSeparation) {

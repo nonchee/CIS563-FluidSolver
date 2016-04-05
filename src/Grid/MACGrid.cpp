@@ -26,10 +26,10 @@ MACGrid::MACGrid(float boxBoundX, float boxBoundY, float boxBoundZ, float gridCe
     gridP = new Grid<float>(dimX, dimY, dimZ, cellSidelength);
     gridMarker = new Grid<int>(dimX, dimY, dimZ, cellSidelength);
     
-    /*std::cout << "cell side " << gridCellSidelength << std::endl;
+    std::cout << "cell side " << gridCellSidelength << std::endl;
     std::cout << "grid dims " << dimX << " " << dimY << " " << dimZ << std::endl;
     std::cout << "box bounds: " << boxBoundX << " " << boxBoundY << " " << boxBoundZ << std::endl;
-    */
+    
     
     
     /*//set gridmarker borders to solid
@@ -151,5 +151,12 @@ void MACGrid::printMarker(std::string caption) {
     for (int i = 0; i < gridMarker->data.size(); i++) {
         std::cout << i << " " << gridMarker->data.at(i) << " " << std::endl;
     }
+    
+}
+
+void MACGrid::printDimensions() {
+    std::cout << "--- MACGRID WITH CHEESE ---" << std::endl;
+    
+    std::cout << "particle bounds " << std::endl;
     
 }

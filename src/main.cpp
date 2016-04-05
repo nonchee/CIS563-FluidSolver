@@ -40,19 +40,19 @@ void setSceneParameters() {
     std::vector<float> jsonFloats = loadJSON("../src/scene/scene.json");
 
     //set bounds of box
-    boxScaleX = 2; //jsonFloats.at(0);
-    boxScaleY = 2; //jsonFloats.at(1);
-    boxScaleZ = 2; //jsonFloats.at(2);
+    boxScaleX = 3; //jsonFloats.at(0);
+    boxScaleY = 3; //jsonFloats.at(1);
+    boxScaleZ = 3; //jsonFloats.at(2);
     boxScale = glm::scale(glm::mat4(1.0f), glm::vec3(boxScaleX, boxScaleY , boxScaleZ));
     
 
     containerGeom = new Geom(boxScaleX, boxScaleY, boxScaleZ);
     flipsolver = new FlipSolver(containerGeom);
     
-    float pboundX = jsonFloats.at(3);
-    float pboundY = jsonFloats.at(4);
-    float pboundZ = jsonFloats.at(5);
-    float psep = jsonFloats.at(6);
+    float pboundX = 2; //jsonFloats.at(3);
+    float pboundY = 2; //jsonFloats.at(4);
+    float pboundZ = 2; //jsonFloats.at(5);
+    float psep = 0.3; //jsonFloats.at(6);
     
     //set  bounds of particles
     flipsolver->setParticleBounds(pboundX, pboundY, pboundZ, psep);
@@ -63,10 +63,12 @@ void checkKeysPressed() {
     if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
         flipsolver->enableGravity();
     }
-    if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS &&
+        glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
         flipsolver->disableGravity();
     }
-    if (glfwGetKey(window, GLFW_KEY_E ) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_E ) == GLFW_PRESS &&
+        glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
         exportToHoudini();
     }
 }

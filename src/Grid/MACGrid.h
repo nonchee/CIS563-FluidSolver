@@ -50,5 +50,6 @@ public:
     
     void extrapolateVelocities();
     void printMarker(std::string caption);
+    void printDimensions(); 
     
 };
