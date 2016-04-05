@@ -129,7 +129,7 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
     std::vector<float> deltaW(mGrid->gridW->data);
     
     ///update for gravity, data is now PIC velocities
-    mGrid->gridV->addForce(0.1 * delta); 
+    mGrid->gridU->addForce(0.9 * delta);
     mGrid->gridV->addForce(-9.8 * delta);
     
     ///calculate delta velocity
@@ -143,7 +143,7 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
     mGrid->gridV->setDeltas(deltaV);
    // std::cout << "now hur " << mGrid->gridV->delta.size() << std::endl;
     
-    PressureSolve(delta);
+    //PressureSolve(delta);
     
     ///extrapolate velocities
     mGrid->extrapolateVelocities();
