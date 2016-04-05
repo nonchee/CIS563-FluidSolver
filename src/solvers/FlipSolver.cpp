@@ -10,9 +10,9 @@ Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
 
 
 
-float fluidBoundX = 1.5;
-float fluidBoundY = 1.5;
-float fluidBoundZ = 1.5;
+float fluidBoundX = 1.8;
+float fluidBoundY = 1.8;
+float fluidBoundZ = 1.8;
 
 
 FlipSolver::FlipSolver(Geom* g) {
@@ -368,7 +368,7 @@ bool FlipSolver::isFluid(int i , int j , int k ) {
 
 void FlipSolver::PressureSolve(float dt) {
     
-    int n = mGrid->numFluidCells;
+    int n = mGrid->dimX * mGrid->dimY * mGrid->dimZ;
     Eigen::VectorXf x(n);
     Eigen::VectorXf b(n);
     Eigen::SparseMatrix<float> A(n,n);
@@ -413,52 +413,12 @@ void FlipSolver::PressureSolve(float dt) {
     
     
     PressureUpdate(A, x, dt);
-    /*//int n = mGrid->numFluidCells; //get size for everything
-    int n = mGrid->gridMarker->data.size();
-    
-    Eigen::SparseMatrix<float> A(n,n); //coeffs matrix
-    Eigen::VectorXd p(n);
-    Eigen::VectorXd b(n);
-    //resid(n); //p, d, and residual vectors
-    
-
-
-    //triplets vector
-    std::vector<Eigen::Triplet<float>> coeffs;
-    
-    //build the matrix of coefficients
-    buildA(A, coeffs);
-    
-    Eigen::LLT<Eigen::MatrixXd> lltOfA(A); // compute the Cholesky decomposition of A
-    if(lltOfA.info() == Eigen::NumericalIssue)
-    {
-        std::cout << A << std::endl << "-----" << std::endl;  //.isCompressed() << std::endl;
-        //        std::cout << A.isVector() << std::endl;
-        throw std::runtime_error("Possibly non semi-positive definitie matrix!");
-    }
-    
-    //Eigen::MatrixXd dMat= Eigen::MatrixXd(A);
-
-   // std::cout << "A: " << std::endl << dMat.format(CleanFmt) << std::endl;
-    
-    //build the vector of negative divergences
-    buildb(b);
-    
-    // fill A and b
-  //  Eigen::ConjugateGradient<Eigen::SparseMatrix<float>> cg;
-    
-    //need to continue looping?
-   // while (cg.error() > 0.01) {
-    cg.compute(A);
-   // std::cout << cg.iters() << std::endl;
-   // std::cout << cg.solve(b); //solve for p*/
-    //}
     
     
 }
 
 void FlipSolver::PressureUpdate(Eigen::SparseMatrix<float> &A, Eigen::VectorXf &p, float dt) {
-   int mx = mGrid->dimX;
+    int mx = mGrid->dimX;
     int my = mGrid->dimY;
     int mz = mGrid->dimZ;
     float dx = mGrid->cellSidelength;
@@ -542,8 +502,9 @@ void FlipSolver::buildA(Eigen::SparseMatrix<float>& A, std::vector<Eigen::Triple
     int mz = mGrid->dimZ;
     
     
-  //  std::cout << "A.ROWS " << A.rows() << std::endl;
-  //  std::cout << mx << " x " <<  my << " x " << mz << std::endl;
+    std::cout << "A.ROWS " << A.rows() << std::endl;
+    std::cout << "A.COLS " << A.cols() << std::endl;
+    std::cout << mx << " x " <<  my << " x " << mz << std::endl;
     
     //loop over all cells to calculate the A matrix
     for (int i = 0; i < mx; i++) {
@@ -559,9 +520,9 @@ void FlipSolver::buildA(Eigen::SparseMatrix<float>& A, std::vector<Eigen::Triple
                     //get grid ID from ijk indices
                     //this is the row of the matrix
                     
-                   /* if (id > 6859) {
-                        std::cout << id << " LOLS OH NOOOES " << std::endl;
-                    }*/
+                    if (id > A.size()) {
+                        std::cout << id << " LOLS NO. " << std::endl;
+                    }
                     
                     
                     int fluidNeighborCount = 6;
@@ -606,19 +567,8 @@ void FlipSolver::buildA(Eigen::SparseMatrix<float>& A, std::vector<Eigen::Triple
         }
     }
     
-    //std::cout << " TRIPLETTTTS " << std::endl;
-    /*for (Eigen::Triplet<float> floot : coeffs ) {
-        std::cout << floot.col() << " " << floot.row() << " " << floot.value() << std::endl;
-    }
-    std::cout << " lolololol " << std::endl;
-    */
-    
-   /* std::cout << coeffs.size() << std::endl;
-    std::cout << A.rows() << std::endl;
-    std::cout << A.cols() << std::endl;*/
     A.setFromTriplets(coeffs.begin(), coeffs.end());
     
-  //  std::cout << "lolhello" << A << std::endl;
 }
 
 
