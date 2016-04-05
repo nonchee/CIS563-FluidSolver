@@ -40,17 +40,22 @@ void setSceneParameters() {
     std::vector<float> jsonFloats = loadJSON("../src/scene/scene.json");
 
     //set bounds of box
-    boxScaleX = jsonFloats.at(0);
-    boxScaleY = jsonFloats.at(1);
-    boxScaleZ = jsonFloats.at(2);
+    boxScaleX = 2; //jsonFloats.at(0);
+    boxScaleY = 2; //jsonFloats.at(1);
+    boxScaleZ = 2; //jsonFloats.at(2);
     boxScale = glm::scale(glm::mat4(1.0f), glm::vec3(boxScaleX, boxScaleY , boxScaleZ));
     
 
     containerGeom = new Geom(boxScaleX, boxScaleY, boxScaleZ);
     flipsolver = new FlipSolver(containerGeom);
     
-    //set worldspace bounds of particles
-    flipsolver->setParticleBounds(jsonFloats.at(3), jsonFloats.at(4), jsonFloats.at(5), jsonFloats.at(6));
+    float pboundX = jsonFloats.at(3);
+    float pboundY = jsonFloats.at(4);
+    float pboundZ = jsonFloats.at(5);
+    float psep = jsonFloats.at(6);
+    
+    //set  bounds of particles
+    flipsolver->setParticleBounds(pboundX, pboundY, pboundZ, psep);
     
 }
 

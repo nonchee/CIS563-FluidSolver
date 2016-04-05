@@ -446,7 +446,7 @@ void Grid<T>::addValueAt(float value, int gridIndex) {
 
 template<typename T>
 void Grid<T>::setValueAt(float value, int gridIndex) {
-    std::cout << " set value at grid index " << std::endl;
+    
     if (gridIndex < data.size()) {
         data[gridIndex] = value;
     }

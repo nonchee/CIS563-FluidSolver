@@ -4,15 +4,6 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
-//
-
-
-
-
-float fluidBoundX = 1.8;
-float fluidBoundY = 1.8;
-float fluidBoundZ = 1.8;
 
 
 FlipSolver::FlipSolver(Geom* g) {
@@ -22,15 +13,10 @@ FlipSolver::FlipSolver(Geom* g) {
 /// Create the MAC grid ///
 void FlipSolver::ConstructMACGrid() {
     
-    //doing this for now lol
-    //will fix in json later
-    //this is ratchettttt
-   // particleSeparation = 0.2;
-    //ratalhdfalsdkfjlaskdtchet
-    particleBoundX = fluidBoundX;
-    particleBoundY = fluidBoundY;
-    particleBoundZ = fluidBoundZ;
-    particleSeparation = 0.6;
+    //particleBoundX = fluidBoundX;
+    //particleBoundY = fluidBoundY;
+    //particleBoundZ = fluidBoundZ;
+    //particleSeparation = 0.6;
     
     //each grid dimension is enough so that a gridcell holds about 8 particles total
     float gridCellSidelength = particleSeparation * 2;
@@ -169,7 +155,7 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
     mGrid->gridV->setDeltas(deltaV);
    // std::cout << "now hur " << mGrid->gridV->delta.size() << std::endl;
     
-    PressureSolve(delta);
+    //PressureSolve(delta);
     
     float dummyPIC = mGrid->gridV->data[0];
     float dummyFLIP = deltaV[0];
@@ -368,10 +354,14 @@ bool FlipSolver::isFluid(int i , int j , int k ) {
 
 void FlipSolver::PressureSolve(float dt) {
     
+    //just basic ho make this the size of the grid
+    //and not try to only make it fluids
     int n = mGrid->dimX * mGrid->dimY * mGrid->dimZ;
+    std::cout << " n vs marker grid size" << n << "  " << (mGrid->gridMarker->data.size()) <<std::endl;
     Eigen::VectorXf x(n);
     Eigen::VectorXf b(n);
     Eigen::SparseMatrix<float> A(n,n);
+    
     //triplets vector
     std::vector<Eigen::Triplet<float>> coeffs;
 
@@ -392,7 +382,7 @@ void FlipSolver::PressureSolve(float dt) {
     {
         std::cout << "AYYYY" << A << std::endl;  //.isCompressed() << std::endl;
         //        std::cout << A.isVector() << std::endl;
-        throw std::runtime_error("Possibly non semi-positive definitie matrix!");
+        throw std::runtime_error("Possibly non semi-positive definite matrix!");
     }
     
 
@@ -492,11 +482,6 @@ void FlipSolver::PressureUpdate(Eigen::SparseMatrix<float> &A, Eigen::VectorXf &
 
 //pressure solving things
 void FlipSolver::buildA(Eigen::SparseMatrix<float>& A, std::vector<Eigen::Triplet<float> >& coeffs) {
-   /* int mx = particleBoundX;
-    int my = particleBoundY;
-    int mz = particleBoundZ;
-    */
-    
     int mx = mGrid->dimX;
     int my = mGrid->dimY;
     int mz = mGrid->dimZ;
@@ -511,57 +496,47 @@ void FlipSolver::buildA(Eigen::SparseMatrix<float>& A, std::vector<Eigen::Triple
         for (int j = 0; j < my; j++) {
             for (int k=0; k < mz; k++) {
                 
-                int id = i + (j * mx) + (k * mx * my);
+                int pressure_id = i + (j * mx) + (k * mx * my);
                 
                 //fluid cell at ijk
                 if (isFluid(i, j, k)) {
-                    
-                    
-                    //get grid ID from ijk indices
-                    //this is the row of the matrix
-                    
-                    if (id > A.size()) {
-                        std::cout << id << " LOLS NO. " << std::endl;
-                    }
-                    
-                    
                     int fluidNeighborCount = 6;
                     
                     //-x neighbor
-                    fluidNeighborCount += insertCoeff(id, i-1, j, k, coeffs);
+                    fluidNeighborCount += insertCoeff(pressure_id, i-1, j, k, coeffs);
                    
                    // int tryMe = i -1 + (j * mx) + (k * mx * my);
                    // std::cout << coeffs[tryMe] std::endl;
                     
                     //+x neighbor
-                    fluidNeighborCount +=insertCoeff(id, i+1,j, k, coeffs);
+                    fluidNeighborCount +=insertCoeff(pressure_id, i+1,j, k, coeffs);
                     
                     
                     //-y neighbor
                     fluidNeighborCount +=
-                    insertCoeff(id, i,j-1, k,coeffs);
+                    insertCoeff(pressure_id, i,j-1, k,coeffs);
                   
                     //+y neighbor
-                    fluidNeighborCount += insertCoeff(id, i,j+1, k,  coeffs);
+                    fluidNeighborCount += insertCoeff(pressure_id, i,j+1, k,  coeffs);
                 
                     
                     //-z neighbor
-                    fluidNeighborCount += insertCoeff(id, i,j, k-1, coeffs);
+                    fluidNeighborCount += insertCoeff(pressure_id, i,j, k-1, coeffs);
                     
                     
                     //+z neighbor
-                    fluidNeighborCount += insertCoeff(id, i,j, k + 1, coeffs);
+                    fluidNeighborCount += insertCoeff(pressure_id, i,j, k + 1, coeffs);
                 
                     
                     //current
-                    coeffs.push_back(Eigen::Triplet<float> (id, id, fluidNeighborCount));
+                    coeffs.push_back(Eigen::Triplet<float> (pressure_id, pressure_id, fluidNeighborCount));
                     
                     
                 }
                 else {
                     //was solid
                     //solid's div will be set to 0 in buildB
-                    coeffs.push_back(Eigen::Triplet<float> (id, id, 1));
+                    coeffs.push_back(Eigen::Triplet<float> (pressure_id, pressure_id, 1));
                 }
             }
         }
