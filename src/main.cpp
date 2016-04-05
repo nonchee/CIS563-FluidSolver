@@ -52,7 +52,7 @@ void setSceneParameters() {
     float pboundX = 2; //jsonFloats.at(3);
     float pboundY = 2; //jsonFloats.at(4);
     float pboundZ = 2; //jsonFloats.at(5);
-    float psep = 0.3; //jsonFloats.at(6);
+    float psep = 0.5; //jsonFloats.at(6);
     
     //set  bounds of particles
     flipsolver->setParticleBounds(pboundX, pboundY, pboundZ, psep);
@@ -81,12 +81,10 @@ int main( void )
     //set up FLIPsolver from JSON file
     setSceneParameters();
     
-
-    
+    //set up viewer
     window = setUpWindow();
-    
     if (!window) { return -1; }
-    
+
     GLuint VertexArrayID;
     glGenVertexArrays(1, &VertexArrayID);
     glBindVertexArray(VertexArrayID);
@@ -217,12 +215,8 @@ int main( void )
         glUseProgram(gridprogramID);
         glm::mat4 MVPGrid = camera->getMVPFromInputs(boxScale);
         
-        //drawSplattedFaces(MVP, gridprogramID, gridvertexbuffer, gridcolorbuffer);
-        
-        
         glfwSwapBuffers(window);
         glfwPollEvents();
-        
     }
     
     

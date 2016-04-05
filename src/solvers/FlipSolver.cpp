@@ -12,20 +12,14 @@ FlipSolver::FlipSolver(Geom* g) {
 
 /// Create the MAC grid ///
 void FlipSolver::ConstructMACGrid() {
-    
-    //particleBoundX = fluidBoundX;
-    //particleBoundY = fluidBoundY;
-    //particleBoundZ = fluidBoundZ;
-    //particleSeparation = 0.6;
-    
+
     //each grid dimension is enough so that a gridcell holds about 8 particles total
     float gridCellSidelength = particleSeparation * 2;
     
     std::cout << "aaaaaaagh" << std::endl;
-    std::cout << container->boxBoundX << std::endl;
-    std::cout << container->boxBoundY << std::endl;
-    std::cout <<  container->boxBoundZ << std::endl;
+    std::cout << container->boxBoundX << std::endl << container->boxBoundY << std::endl <<  container->boxBoundZ << std::endl;
    
+    
     //construct a MAC grid out of container dimensions
     mGrid = new MACGrid(container->boxBoundX,
                         container->boxBoundY,
@@ -37,12 +31,6 @@ void FlipSolver::InitializeParticles() {
     //IT WAS FLOATING POINT ERRORS THE WHOLE TIME
     float epsilon = 0.001;
     
-    std::cout << " why are you outside your container" << std::endl;
-    std::cout << particleBoundX << std::endl;
-    std::cout << particleBoundY << std::endl;
-    std::cout << particleBoundZ << std::endl;
-    
-    //9 total particles along each axis
     for (float i = 0; i + epsilon < particleBoundX; i+= particleSeparation) {
         for (float j = 0; j + epsilon < particleBoundY; j += particleSeparation) {
             for (float k = 0; k + epsilon  < particleBoundZ; k += particleSeparation) {
@@ -50,10 +38,14 @@ void FlipSolver::InitializeParticles() {
                 if (withinFluidBounds(i, j, k) ) {
                     
                     Particle p;
-                    
-                    glm::vec3 jitter = glm::vec3(0.01 * rand(), 0.01 * rand(), 0.01 * rand());
+                   
+                    /*float randX = 0.1 * ((float) rand())/RAND_MAX;
+                    float randY = 0.1 * ((float) rand())/RAND_MAX;
+                    float randZ  = 0.1 * ((float) rand())/RAND_MAX;
+                    glm::vec3 jitter = glm::vec3(randX, randY, randZ);
+                    std::cout << "random jitter" << glm::to_string(jitter) << std::endl;*/
                     p.pos = glm::vec3(i, j, k); //+ jitter;
-                    //p.speed = glm::vec3(0, -9.8, 0);
+                    //std::cout << glm::to_string(p.pos) << std::endl;
                     
                     p.r = 0;
                     p.g = 0;
@@ -64,12 +56,8 @@ void FlipSolver::InitializeParticles() {
                     
                     //set grid index, also mark gird index
                     p.gridIndex = mGrid->getGridIndex(p.pos);
-                    
-                    
+
                     mGrid->gridMarker->addValueAt(1, p.gridIndex);
-                    
-                    //std::cout << glm::to_string(p.pos) << " --> " << p.gridIndex << std::endl;
-                    //
                     
                     ParticlesContainer.push_back(p);
                 }
@@ -131,15 +119,9 @@ glm::vec3 getSolidVelocityNormal() {
 void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
                             float boxScaleZ, glm::vec3 CameraPosition) {
     
-    mGrid->gridV->printContents("flip update");
+    //mGrid->gridV->printContents("grid V after flip update");
     ///put particle onto grid
     StoreParticleVelocitiesToGrid();
-
-    
-
-    ///extrapolate velocities
-    mGrid->extrapolateVelocities();   //markerGrid.data());
-
     
     ///save old gridV
     std::vector<float> deltaU(mGrid->gridU->data);
@@ -161,7 +143,10 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
     mGrid->gridV->setDeltas(deltaV);
    // std::cout << "now hur " << mGrid->gridV->delta.size() << std::endl;
     
-    //PressureSolve(delta);
+    PressureSolve(delta);
+    
+    ///extrapolate velocities
+    mGrid->extrapolateVelocities();
     
     float dummyPIC = mGrid->gridV->data[0];
     float dummyFLIP = deltaV[0];
@@ -363,7 +348,7 @@ void FlipSolver::PressureSolve(float dt) {
     //just basic ho make this the size of the grid
     //and not try to only make it fluids
     int n = mGrid->dimX * mGrid->dimY * mGrid->dimZ;
-    std::cout << " n vs marker grid size" << n << "  " << (mGrid->gridMarker->data.size()) <<std::endl;
+   
     Eigen::VectorXf x(n);
     Eigen::VectorXf b(n);
     Eigen::SparseMatrix<float> A(n,n);
@@ -376,9 +361,7 @@ void FlipSolver::PressureSolve(float dt) {
     buildA(A, coeffs);
     buildb(b);
     
-    //std::cout << "AYYY " << A << std::endl;
-    //std::cout << " BBBBB" << std::endl << b << std::endl;
-    
+    //std::cout << "AYYY " << A << std::endl << " BBBBB" << std::endl << b << std::endl;
     
     Eigen::ConjugateGradient<Eigen::SparseMatrix<float> > cg;
     cg.compute(A);
