@@ -56,6 +56,8 @@ public:
     glm::vec3 giveNewVelocity(Particle p);
     void calculateAvgNumberOfParticlesPerGrid();
     
+    void PressureUpdate(float delta);
+    
     void extrapolateVelocities();
     void printMarker(std::string caption);
     void printDimensions(); 

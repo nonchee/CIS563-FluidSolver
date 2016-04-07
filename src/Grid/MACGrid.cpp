@@ -54,11 +54,9 @@ int MACGrid::getGridIndex(int i , int j, int k) {
 int MACGrid::getGridIndex(glm::vec3 position) {
     
     //assumes that the grid starts at 000 into +x, +y, +z
-
-    //WE ALL LOVE FLOATING POINT ERRORS
     float epsilon = 0.001;
     
-    glm::vec3 boxOrig((-bbX, -bbY, -bbZ));
+    glm::vec3 boxOrig(-bbX, -bbY, -bbZ);
     for(int i = 0; i < 3; i++) {
         if (position[i] != boxOrig[i])  {
             position[i] -= epsilon;
@@ -191,6 +189,35 @@ glm::vec3 MACGrid::giveNewVelocity(Particle p) {
     return FLIPvel + PICvel;
     
 }
+
+
+
+void MACGrid::PressureUpdate(float delta) {
+    
+    float scale = delta/(float)cellSidelength;
+
+    for (int i = 0; i < dimX; i++) {
+        for (int j = 0; j < dimY; j++) {
+            for (int k = 0; k < dimZ; k++) {
+                
+                //get position in data
+                glm::vec3 cur(i, j, k);
+                //glm::vec3 neighbV = cur - gridV->gridDir;
+                glm::vec3 neighbV = cur - gridV->gridDir;
+                
+                
+                int id = gridP->ijkToGridIndex(cur);
+                int id2 = gridP->ijkToGridIndex(neighbV);
+                float pressureChange = gridP->data.at(id) - gridP->data.at(id2);
+                
+                gridV->addValueAt(-scale * pressureChange, i, j, k);
+                
+            }
+        }
+    }
+}
+
+
 
 
 void MACGrid::calculateAvgNumberOfParticlesPerGrid() {

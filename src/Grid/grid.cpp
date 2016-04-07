@@ -45,11 +45,6 @@ float Grid<T>::getKernelWeight(float pcomponent,
                                float W) {
     
     float kerneldist = glm::distance(offsetParticlePos, (glm::vec3) neighborIJK);
-    /*printVector(offsetParticlePos, "this my pos ");
-    printVector((glm::vec3) neighborIJK, "this my neighb ");
-    std::cout << "this my kernel dist: " << kerneldist << std::endl;
-    std::cout << " this my W " << W << std::endl;*/
-    
     if (kerneldist > 0) {
 
         float hX = kerneldist/ (float) cellSidelength;
@@ -261,6 +256,8 @@ void Grid<T>::storeParticleVelocityToGrid(Particle p, glm::vec3 offset, float W)
     for (glm::ivec3 neighborCell : cellsToSplat) {
         int neighbor1DIndex = ijkToGridIndex(neighborCell);
         float kernelWeight = getKernelWeight(pcomponent, offsetPos, neighborCell, W);
+        std::cout << glm::to_string(p.gridIJK) << std::endl;
+        std::cout << "neighbor ind " << neighbor1DIndex << std::endl;
         data.at(neighbor1DIndex) += kernelWeight * pcomponent;
     }
 
@@ -275,13 +272,7 @@ void Grid<T>::updateVel(int i, int j, int k, float delU) {
     
 }
 
-template<typename T>
-void Grid<T>::addValueAt(float value, int gridIndex) {
-    if (gridIndex < data.size()) {
-        data[gridIndex] += value;
-    }
-}
-
+//oops rather redundant
 template<typename T>
 void Grid<T>::addValueAt(float value, int i, int j, int k)  {
     int gridIndex = ijkToGridIndex(glm::vec3(i, j, k));
@@ -290,6 +281,17 @@ void Grid<T>::addValueAt(float value, int i, int j, int k)  {
         data[gridIndex] += value;
     }
 }
+
+
+
+
+template<typename T>
+void Grid<T>::addValueAt(float value, int gridIndex) {
+    if (gridIndex < data.size()) {
+        data[gridIndex] += value;
+    }
+}
+
 
 
 template<typename T>

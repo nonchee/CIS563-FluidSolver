@@ -32,7 +32,12 @@ class FlipSolver : public FluidSolver {
     
     float bbX;
     float bbY;
-    float bbZ; 
+    float bbZ;
+    
+    
+    int mx; // = mGrid->dimX;
+    int my; // = mGrid->dimY;
+    int mz;// = mGrid->dimZ;
 
 public:
     FlipSolver(Geom* g);
