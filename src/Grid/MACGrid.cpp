@@ -42,8 +42,6 @@ void MACGrid::markSolidBoundaries() {
     }
 }
 
-
-
 void MACGrid::setNumFluidCells(int num) {
     numFluidCells = num;
 }
@@ -126,16 +124,35 @@ void MACGrid::resetGrids() {
 }
 
 
+void MACGrid::addForcesToGrids(glm::vec3 forces, float delta) {
+    
+    std::cout << "force to add " << forces[1] * delta << std::endl;
+    printMarker("add force to these pls");
+    
+    for (int i = 0; i < dimX; i++) {
+        for (int j =0; j < dimY; j++) {
+            for (int k =0; k < dimZ; k++) {
+                if(isFluid(i, j, k)) {
+                  gridV->updateVel(i, j, k, forces[1] * delta);
+                }
+            }
+        }
+    }
+}
+
+
+
+bool MACGrid::isFluid(int i, int j, int k) {
+    return (*gridMarker)(i, j, k) > 0;
+}
+
+
 void MACGrid::extrapolateVelocities() {
     gridV->extrapolateVelocities(gridMarker);
 }
 
 
 
-//take weighted average with kernel function
-//assign that particle's velocity to the MAC grid
-//mGrid->assignVelocityToCell(i, j, k, weightedVelocity);
-//mGrid();
 void MACGrid::storeParVelToGrids(Particle p){
     
     //gridU->storeParticleVelocityToGrid(p, glm::vec3(0, 0.5, 0.5), glm::vec3(1, 0, 0));

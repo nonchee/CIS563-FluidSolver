@@ -38,9 +38,12 @@ public:
     int getGridIndex(int i , int j, int k);
     glm::ivec3 getGridIJK(glm::vec3 position);
     
+    bool isFluid(int i, int j, int k);
     
     void resetGrids();
     void markSolidBoundaries();
+    
+    void addForcesToGrids(glm::vec3 force, float delta);
     
     
     //particle to grid

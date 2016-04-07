@@ -57,7 +57,7 @@ public:
     void extrapolateVelocities(Grid<int>* marker); //(int i, int j, int k);
     
     //force resolution
-    void addForce(float f);
+    void updateVel(int i, int j, int k, float f);
     void addValueAt(float value, int gridIndex);
     void addValueAt(float value, int i, int j, int k);
     void setValueAt(float value, int gridIndex);

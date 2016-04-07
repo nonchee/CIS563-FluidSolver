@@ -85,12 +85,11 @@ std::vector<glm::ivec3> Grid<T>::getTrilinNeighbors(glm::ivec3 pIJK) {
     std::vector<glm::ivec3> cellsToSplat;
     cellsToSplat.push_back(pIJK);
     
-    for (int axix = 0; axis < 3; axis++) {
-        for (int dir = -1; dir < 2; dir++) {
+    for (int axis = 0; axis < 3; axis++) {
+        for (int dir = -1; dir < 2; dir+=2) {
             glm::ivec3 neighbDir(0, 0, 0);
+            //std::cout << "possible neighbor Dir " << glm::to_string(neighbDir) << std::endl;
             neighbDir[axis] = dir;
-            
-
             
             if (inGridBounds(pIJK + neighbDir)) {
                 cellsToSplat.push_back(pIJK + neighbDir);
@@ -99,6 +98,7 @@ std::vector<glm::ivec3> Grid<T>::getTrilinNeighbors(glm::ivec3 pIJK) {
     }
     return cellsToSplat;
 }
+
 
 
 
@@ -269,11 +269,10 @@ void Grid<T>::storeParticleVelocityToGrid(Particle p, glm::vec3 offset, float W)
 
 //might just fuse this with resetToZero
 template<typename T>
-void Grid<T>::addForce(float f) {
-
-    for (int i = 0 ; i < data.size(); i++) {
-        data[i] += f;
-    }
+void Grid<T>::updateVel(int i, int j, int k, float delU) {
+    int index = ijkToGridIndex(glm::vec3(i, j, k));
+    data[index] += delU;
+    
 }
 
 template<typename T>
@@ -373,6 +372,7 @@ void Grid<T>::setDeltas(std::vector<float> calculatedDeltas) {
 template<typename T>
 void Grid<T>::extrapolateVelocities(Grid<int>* marker) {
 
+    std::vector<T> oldData(data);
     
     for (int i = 0; i < dimX; i++) {
         for (int j = 0; j < dimY; j++) {
@@ -381,27 +381,34 @@ void Grid<T>::extrapolateVelocities(Grid<int>* marker) {
                 //if empty or solid
                 if ((*marker)(i, j, k) <= 0) {
                     
-                    float totalVel;
-                    int numFluidNeighbors;
+                    float totalVel = 0;
                     
                     int gridIndex = ijkToGridIndex(glm::vec3(i, j, k));
                     
+                    ///printVector(glm::vec3(i, j,k), "me");
+                    //std::cout << " my index " << gridIndex << std::endl;
+                    
                     
                     std::vector<glm::ivec3> neighbors = getTrilinNeighbors(glm::ivec3(i, j, k));
+                    int numNeighbors = 0;
                     
                     for (glm::ivec3 neighbor : neighbors) {
-                        
+                        //printVector((glm::vec3)neighbor, "  was neighbor");
                         //if neighbor was fluid, get its vel and add to neighbcount
                         if ((*marker)(neighbor.x, neighbor.y, neighbor.z) >=0) {
-                            numFluidNeighbors++;
-                            ijkToGridIndex(neighbor);
-                    
-                            totalVel+= data.at(ijkToGridIndex(neighbor));
+                            totalVel+= oldData.at(ijkToGridIndex(neighbor));
+                            //std::cout << "    new total vel " << totalVel << "from " << ijkToGridIndex(neighbor) << std::endl;
+                            numNeighbors++;
                         }
+                        
                     }
                     
-                    if (gridIndex < data.size()) {
-                        data.at(gridIndex) = totalVel/(float)numFluidNeighbors;
+                    //can't just use neighbrs.size() because trilin is quite general
+                    if (numNeighbors > 0) {
+                       
+                       // std::cout << "  pls extrap " << totalVel/(float)numNeighbors << " to grid index " << gridIndex << std::endl;
+                        //std::cout << "  this many fluid neighbors " << numNeighbors  <<std::endl<< std::endl;
+                        data.at(gridIndex) = totalVel/(float)numNeighbors;
                     }
                 }
             }

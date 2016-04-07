@@ -45,12 +45,12 @@ void FlipSolver::InitializeParticles() {
                     
                     p.r = 0; p.g = 0; p.b = 255; p.a = 255; p.size = 0.1; //aesthetic choices lol
                     
-                    p.speed = glm::vec3(0, -9.8, 0);
+                    p.speed = glm::vec3(0, 0, 0);
                     
                     //set grid index
                     p.gridIndex = mGrid->getGridIndex(p.pos);
                     p.gridIJK = mGrid->getGridIJK(p.pos);
-                    mGrid->gridMarker->addValueAt(1, p.gridIndex);
+                    mGrid->gridMarker->setValueAt(1, p.gridIndex);
                     ParticlesContainer.push_back(p);
                 }
             }
@@ -62,9 +62,7 @@ void FlipSolver::InitializeParticles() {
     int numFluidCells = countFluidCells();
     mGrid->setNumFluidCells(numFluidCells);
     mGrid->particleCount = ParticlesContainer.size();
-    std::cout << "num particles "<< mGrid->particleCount << std::endl;
     mGrid->calculateAvgNumberOfParticlesPerGrid();
-    
 }
 
 
@@ -97,6 +95,7 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
     //mGrid->gridV->printContents("grid V after flip update");
     ///put particle onto grid
     StoreParticleVelocitiesToGrid();
+    
     mGrid->gridV->printContents("flip update() particles stored to gridV on update");
     
     ///save old gridV
@@ -105,7 +104,9 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
     std::vector<float> deltaW(mGrid->gridW->data);
     
     ///update for gravity, data is now PIC velocities
-    mGrid->gridV->addForce(-9.8 * delta);
+    //mGrid->gridV->printContents("flip update() gridV before forces added ");
+    mGrid->addForcesToGrids(glm::vec3(0, -9.8, 0), delta); //-9.8 * delta);
+    mGrid->gridV->printContents("flip update() gridV after forces added ");
     
     ///calculate delta velocity
     for (int i = 0; i < mGrid->gridV->data.size(); i++) {
@@ -119,10 +120,13 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
     
     //PressureSolve(delta);
     
-    ///extrapolate velocities
+    
+    //mGrid->gridV->printContents("flip update() gridV before extrapolation");
+    
     mGrid->extrapolateVelocities();
     
     
+    mGrid->gridV->printContents("after extrapolation");
     
     MACGrid2Particle(delta);
   
@@ -134,8 +138,21 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
 
 
 void FlipSolver::MACGrid2Particle(float delta) {
-    float dummyPIC = mGrid->gridV->data[0];
-    float dummyFLIP = mGrid->gridV->delta[0];
+    float dummyPIC = 0; //= mGrid->gridV->data[21];
+    float dummyFLIP= 0; //= mGrid->gridV->data[21];
+    
+    //later make this better LOL
+    for (int i = 0; i < mGrid->gridV->data.size(); i++) {
+        if (mGrid->gridV->data.at(i) != 0) {
+            dummyFLIP = dummyPIC = mGrid->gridV->data.at(i);
+            break;
+        }
+    }
+
+    std::cout << "DUMMY PIC " << dummyPIC << std::endl;
+    
+    std::cout << "DUMMY FLIP " << dummyFLIP << std::endl;
+    //float dummyFLIP = mGrid->gridV->delta[0];
     
     //giving a dummy speed based on gridV * delta
     glm::vec3 picVel = glm::vec3(0, 0.05 * dummyPIC, 0);
@@ -146,6 +163,9 @@ void FlipSolver::MACGrid2Particle(float delta) {
     std::vector<Particle> updatedParticles;
     
     for (Particle p : ParticlesContainer) {
+        
+        
+        //std::vector<glm::vec3> gridVneighbors = mGrid->gridV->getTrilinNeighbors(p.gridIJK);
         
         //collision detection! if the particle leaves the container
         if (!container->insideContainer(p.pos)) {
@@ -161,7 +181,6 @@ void FlipSolver::MACGrid2Particle(float delta) {
             p.r = 0; p.g = 255; p.b = 255;
         }
         
-        //getInterpolatedVelocity(p.pos);
         
   
         
@@ -178,6 +197,7 @@ void FlipSolver::MACGrid2Particle(float delta) {
         p.speed = midEuler;
         
         p.pos =  midpoint + midEuler * delta/2.0f;
+        p.gridIJK = mGrid->getGridIJK(p.pos);
         
         p.r = 0;
         p.g = 0;
@@ -297,17 +317,12 @@ int FlipSolver::insertCoeff(int id, int i, int j, int k, std::vector<Eigen::Trip
 
 
 bool FlipSolver::isFluid(int i , int j , int k ) {
-    //mGrid->gridMarker->printContents("this be the marker grid");
-    //std::cout << i << " " << j << " " << k << " was fluid " << ((*(mGrid->gridMarker))(i, j, k)) << std::endl;
-    
-    return ((*(mGrid->gridMarker))(i, j, k) > 0);
-    
+    return mGrid->isFluid(i, j, k);
 }
 
 void FlipSolver::PressureSolve(float dt) {
     
-    //just basic ho make this the size of the grid
-    //and not try to only make it fluids
+    //size of grids
     int n = mGrid->dimX * mGrid->dimY * mGrid->dimZ;
    
     Eigen::VectorXf x(n);
