@@ -106,6 +106,7 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
     ///update for gravity, data is now PIC velocities
     //mGrid->gridV->printContents("flip update() gridV before forces added ");
     mGrid->addForcesToGrids(glm::vec3(0, -9.8, 0), delta); //-9.8 * delta);
+    
     mGrid->gridV->printContents("flip update() gridV after forces added ");
     
     ///calculate delta velocity
@@ -115,10 +116,12 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
         deltaW[i] = mGrid->gridW->data[i] - deltaW[i];
     }
     
+    //mGrid->gridU->setDeltas(deltaU);
     mGrid->gridV->setDeltas(deltaV);
+    //mGrid->gridW->setDeltas(deltaW);
 
     
-    //PressureSolve(delta);
+    PressureSolve(delta);
     
     
     //mGrid->gridV->printContents("flip update() gridV before extrapolation");
@@ -165,7 +168,7 @@ void FlipSolver::MACGrid2Particle(float delta) {
     for (Particle p : ParticlesContainer) {
         
         
-        //std::vector<glm::vec3> gridVneighbors = mGrid->gridV->getTrilinNeighbors(p.gridIJK);
+        std::vector<glm::ivec3> gridVneighbors = mGrid->gridV->getTrilinNeighbors(p.gridIJK);
         
         //collision detection! if the particle leaves the container
         if (!container->insideContainer(p.pos)) {
@@ -181,8 +184,6 @@ void FlipSolver::MACGrid2Particle(float delta) {
             p.r = 0; p.g = 255; p.b = 255;
         }
         
-        
-  
         
         p.speed = picVel + flipVel;
         
@@ -447,16 +448,15 @@ void FlipSolver::PressureUpdate(Eigen::SparseMatrix<float> &A, Eigen::VectorXf &
 
 //pressure solving things
 void FlipSolver::buildA(Eigen::SparseMatrix<float>& A, std::vector<Eigen::Triplet<float> >& coeffs) {
+    
+    A.setZero();
+    
     int mx = mGrid->dimX;
     int my = mGrid->dimY;
     int mz = mGrid->dimZ;
     
+    std::cout << "DIMS OF MGRID " << mx << " x " <<  my << " x " << mz << std::endl;
     
-    std::cout << "A.ROWS " << A.rows() << std::endl;
-    std::cout << "A.COLS " << A.cols() << std::endl;
-    std::cout << mx << " x " <<  my << " x " << mz << std::endl;
-    
-    //loop over all cells to calculate the A matrix
     for (int i = 0; i < mx; i++) {
         for (int j = 0; j < my; j++) {
             for (int k=0; k < mz; k++) {
@@ -465,6 +465,7 @@ void FlipSolver::buildA(Eigen::SparseMatrix<float>& A, std::vector<Eigen::Triple
                 
                 //fluid cell at ijk
                 if (isFluid(i, j, k)) {
+                    
                     int fluidNeighborCount = 6;
                     
                     //-x neighbor
@@ -499,7 +500,7 @@ void FlipSolver::buildA(Eigen::SparseMatrix<float>& A, std::vector<Eigen::Triple
                     
                 }
                 else {
-                    //was solid
+                    //was solid or empty
                     //solid's div will be set to 0 in buildB
                     coeffs.push_back(Eigen::Triplet<float> (pressure_id, pressure_id, 1));
                 }
