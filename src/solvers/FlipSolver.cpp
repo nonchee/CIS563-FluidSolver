@@ -16,11 +16,9 @@ FlipSolver::FlipSolver(Geom* g) {
 
 /// Create the MAC grid ///
 void FlipSolver::ConstructMACGrid() {
-
-    //each grid dimension is enough so that a gridcell holds about 8 particles total
-    mGrid = new MACGrid(bbX, bbY, bbZ, particleSeparation * 2);
     
-    //mGrid->printDimensions();
+    mGrid = new MACGrid(bbX, bbY, bbZ, particleSeparation * 2);
+
 }
 
 void FlipSolver::InitializeParticles() {
@@ -31,13 +29,11 @@ void FlipSolver::InitializeParticles() {
     */
     
     std::cout << "fluid origin" << glm::to_string(glm::vec3(0, 0, 0)) << " " << mGrid->getGridIndex(glm::vec3(0, 0, 0)) << std::endl;
-    std::cout << " fluid extreme " <<glm::to_string(glm::vec3(particleBoundX, particleBoundY, particleBoundZ)) << " " << mGrid->getGridIndex(glm::vec3(particleBoundX, particleBoundY, particleBoundZ)) << std::endl;
+    std::cout << "fluid xtreme " <<glm::to_string(glm::vec3(particleBoundX, particleBoundY, particleBoundZ)) << " " <<
+        mGrid->getGridIndex(glm::vec3(particleBoundX, particleBoundY, particleBoundZ)) << std::endl;
     
-    //IT WAS FLOATING POINT ERRORS THE WHOLE TIME
+    
     float epsilon = 0.001;
-    
-    int indexOffset = bbX * bbY * bbZ;
-
     for (float i = -bbX; i + epsilon < bbX; i+= particleSeparation) {
         for (float j = -bbY; j + epsilon < bbY; j += particleSeparation) {
             for (float k = -bbZ; k + epsilon  < bbZ; k += particleSeparation) {
@@ -49,11 +45,12 @@ void FlipSolver::InitializeParticles() {
                     
                     p.r = 0; p.g = 0; p.b = 255; p.a = 255; p.size = 0.1; //aesthetic choices lol
                     
+                    p.speed = glm::vec3(0, -9.8, 0);
+                    
                     //set grid index
                     p.gridIndex = mGrid->getGridIndex(p.pos);
-    
+                    p.gridIJK = mGrid->getGridIJK(p.pos);
                     mGrid->gridMarker->addValueAt(1, p.gridIndex);
-                    
                     ParticlesContainer.push_back(p);
                 }
             }
@@ -65,48 +62,26 @@ void FlipSolver::InitializeParticles() {
     int numFluidCells = countFluidCells();
     mGrid->setNumFluidCells(numFluidCells);
     mGrid->particleCount = ParticlesContainer.size();
+    std::cout << "num particles "<< mGrid->particleCount << std::endl;
     mGrid->calculateAvgNumberOfParticlesPerGrid();
     
 }
 
-int FlipSolver::countFluidCells() {
-    //count number of fluid cells
-    int numFluidCells = 0;
-    for (int i = 0; i < mGrid->gridMarker->dimX; i++) {
-        for (int j = 0; j < mGrid->gridMarker->dimY; j++) {
-            for (int k = 0; k < mGrid->gridMarker->dimZ; k++) {
-                if ((*(mGrid->gridMarker))(i, j, k) > 0 ) {
-                    numFluidCells++;
-                }
-            }
-        }
-    }
-    return numFluidCells;
-    
-}
-
-void FlipSolver::enableGravity() {
-    gravityEnabled = true;
-}
-
-void FlipSolver::disableGravity() {
-    gravityEnabled = false;
-}
 
 /// Initialize the grid and particle positions and velocities.
 void FlipSolver::Init() {
     
     ConstructMACGrid();
     
-    mGrid->printMarker("before fluid marker");
+    //mGrid->printMarker("before fluid marker");
     
     
     InitializeParticles();
-    mGrid->printMarker("after fluid marker");
+    //mGrid->printMarker("after fluid marker");
     
     StoreParticleVelocitiesToGrid();
-    //mGrid->gridV->printContents("particles stored to gridV");
-    mGrid->printMarker("after velocities stored marker");
+
+    //mGrid->printMarker("after velocities stored marker");
 
 
 }
@@ -122,6 +97,7 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
     //mGrid->gridV->printContents("grid V after flip update");
     ///put particle onto grid
     StoreParticleVelocitiesToGrid();
+    mGrid->gridV->printContents("flip update() particles stored to gridV on update");
     
     ///save old gridV
     std::vector<float> deltaU(mGrid->gridU->data);
@@ -129,7 +105,6 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
     std::vector<float> deltaW(mGrid->gridW->data);
     
     ///update for gravity, data is now PIC velocities
-    mGrid->gridU->addForce(0.9 * delta);
     mGrid->gridV->addForce(-9.8 * delta);
     
     ///calculate delta velocity
@@ -139,7 +114,6 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
         deltaW[i] = mGrid->gridW->data[i] - deltaW[i];
     }
     
-    
     mGrid->gridV->setDeltas(deltaV);
 
     
@@ -148,9 +122,26 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
     ///extrapolate velocities
     mGrid->extrapolateVelocities();
     
+    
+    
+    MACGrid2Particle(delta);
+  
+    //send drawing info to GPU
+    update(delta, boxScaleX, boxScaleY, boxScaleZ, CameraPosition);
+    
+}
+
+
+
+void FlipSolver::MACGrid2Particle(float delta) {
     float dummyPIC = mGrid->gridV->data[0];
-    float dummyFLIP = deltaV[0];
- 
+    float dummyFLIP = mGrid->gridV->delta[0];
+    
+    //giving a dummy speed based on gridV * delta
+    glm::vec3 picVel = glm::vec3(0, 0.05 * dummyPIC, 0);
+    glm::vec3 flipVel = glm::vec3(0, 0.95 * dummyFLIP, 0);
+    
+    
     ///put grid back onto each particle
     std::vector<Particle> updatedParticles;
     
@@ -172,9 +163,7 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
         
         //getInterpolatedVelocity(p.pos);
         
-        //giving a dummy speed based on gridV * delta
-        glm::vec3 picVel = glm::vec3(0, 0.05 * dummyPIC, 0);
-        glm::vec3 flipVel = glm::vec3(0, 0.95 * dummyFLIP, 0);
+  
         
         p.speed = picVel + flipVel;
         
@@ -185,7 +174,7 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
                                        (fwdEulerPos.z + p.pos.z)/2);
         
         glm::vec3 midEuler = picVel + flipVel; // super basic ho for now
-
+        
         p.speed = midEuler;
         
         p.pos =  midpoint + midEuler * delta/2.0f;
@@ -194,39 +183,11 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
         p.g = 0;
         p.b = 255;
         p.a = 255;
-
+        
         updatedParticles.push_back(p); //InterpolateVelocity(p.pos, *mGrid);
     }
     
-    
-   
     ParticlesContainer = updatedParticles;
-  
-    //send drawing info to GPU
-    update(delta, boxScaleX, boxScaleY, boxScaleZ, CameraPosition);
-    
-}
-
-
-
-void FlipSolver::MACGrid2Particle() {
-    
-    //save old MACGrid data
-    //oldMACGrid = mGrid;
-    
-    //update velocities in each grid
-    //based on the forces
-    //gridU->update();
-    //gridV->update();
-    //gridW->update();
-    
-    //do later
-    //gridP->update();
-    
-    for (Particle p : ParticlesContainer) {
-        p.speed = mGrid->giveNewVelocity(p);
-    }
-    
 }
 
 
@@ -244,15 +205,15 @@ void FlipSolver::StoreParticleVelocitiesToGrid(){
     
     //properly resets grids
     mGrid->resetGrids();
-    mGrid->gridV->printContents("grid V reset to zero!");
+    //mGrid->gridV->printContents("grid V reset to zero!");
 
     for (Particle p : ParticlesContainer) {
         mGrid->gridMarker->addValueAt(1, p.gridIndex); //cool so marker grid gets updated
-        mGrid->storeParticleVelocityToGrid(p);
+        mGrid->storeParVelToGrids(p);
     }
     
-    //mGrid->gridMarker->printContents("particles stored to marker");
-    //mGrid->gridV->printContents("particles stored to gridV");
+    //mGrid->printMarker("particles stored to marker");
+    //mGrid->gridV->printContents("flipsolver::storepar2grid()  particles stored to gridV");
     //mGrid->storeParticlesToGrid(&particlesByIndex);
 
     
@@ -570,3 +531,27 @@ void FlipSolver::buildb(Eigen::VectorXf& b) {
     }
 }
 
+
+int FlipSolver::countFluidCells() {
+    //count number of fluid cells
+    int numFluidCells = 0;
+    for (int i = 0; i < mGrid->gridMarker->dimX; i++) {
+        for (int j = 0; j < mGrid->gridMarker->dimY; j++) {
+            for (int k = 0; k < mGrid->gridMarker->dimZ; k++) {
+                if ((*(mGrid->gridMarker))(i, j, k) > 0 ) {
+                    numFluidCells++;
+                }
+            }
+        }
+    }
+    return numFluidCells;
+    
+}
+
+void FlipSolver::enableGravity() {
+    gravityEnabled = true;
+}
+
+void FlipSolver::disableGravity() {
+    gravityEnabled = false;
+}

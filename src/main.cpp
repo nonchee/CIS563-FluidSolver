@@ -39,10 +39,25 @@ FlipSolver* flipsolver;
 void setSceneParameters() {
     std::vector<float> jsonFloats = loadJSON("../src/scene/scene.json");
 
-    //set bounds of box
-    boxScaleX = 2; //jsonFloats.at(0);
-    boxScaleY = 2; //jsonFloats.at(1);
-    boxScaleZ = 2; //jsonFloats.at(2);
+    bool smallBox = 1;
+    if (smallBox == 0) {
+        boxScaleX = 1.5; //jsonFloats.at(0);
+        boxScaleY = 1.5; //jsonFloats.at(1);
+        boxScaleZ = 1.5; //jsonFloats.at(2);
+        
+    }//set bounds of box
+
+    else if (smallBox == 1){
+        boxScaleX = 2; //jsonFloats.at(0);
+        boxScaleY = 2; //jsonFloats.at(1);
+        boxScaleZ = 2; //jsonFloats.at(2);
+    }
+    
+    else {
+        boxScaleX = 3; //jsonFloats.at(0);
+        boxScaleY = 3; //jsonFloats.at(1);
+        boxScaleZ = 3; //jsonFloats.at(2);
+    }
     boxScale = glm::scale(glm::mat4(1.0f), glm::vec3(boxScaleX, boxScaleY , boxScaleZ));
     
 

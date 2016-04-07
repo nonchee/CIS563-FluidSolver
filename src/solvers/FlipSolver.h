@@ -49,8 +49,10 @@ public:
     void ConstructMACGrid(); //Create the MAC grid
     
     void StoreParticleVelocitiesToGrid();
+    
     glm::vec3 InterpolateVelocity(const glm::vec3& pos, const MACGrid& mGrid);
-    void MACGrid2Particle();
+    
+    void MACGrid2Particle(float delta);
     
     
     void updateGravity();

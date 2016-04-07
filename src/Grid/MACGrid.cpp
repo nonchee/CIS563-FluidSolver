@@ -70,22 +70,41 @@ int MACGrid::getGridIndex(glm::vec3 position) {
     position -= boxOrig;
     
     //find closest multiple of cellSideLength
-    int x = (position.x)/cellSidelength;
-    int y = (position.y)/cellSidelength;
-    int z = (position.z)/cellSidelength;
+    int x = position.x/cellSidelength;
+    int y = position.y/cellSidelength;
+    int z = position.z/cellSidelength;
 
     //give a 1D location for 3D index
     return (z * dimX * dimY) + (y * dimX) + x;
     
 }
 
+glm::ivec3 MACGrid::getGridIJK(glm::vec3 position) {
+    //assumes that the grid starts at 000 into +x, +y, +z
+    
+    //WE ALL LOVE FLOATING POINT ERRORS
+    float epsilon = 0.001;
+    
+    glm::vec3 boxOrig((-bbX, -bbY, -bbZ));
+    for(int i = 0; i < 3; i++) {
+        if (position[i] != boxOrig[i])  {
+            position[i] -= epsilon;
+        }
+    }
+    
+    position -= boxOrig;
+    
+    //find closest multiple of cellSideLength
+    int x = position.x/cellSidelength;
+    int y = position.y/cellSidelength;
+    int z = position.z/cellSidelength;
+    
+    return glm::ivec3(x, y, z);
+    
+}
+
 
 void MACGrid::resetGrids() {
-    
-    
-    
-    //std::cout << "value at 13 " << gridMarker->data.at(13) << std::endl;
-
     
     // marker to zero, keeping solids
     for (int i = 0; i < dimX; i++) {
@@ -117,10 +136,10 @@ void MACGrid::extrapolateVelocities() {
 //assign that particle's velocity to the MAC grid
 //mGrid->assignVelocityToCell(i, j, k, weightedVelocity);
 //mGrid();
-void MACGrid::storeParticleVelocityToGrid(Particle p){
+void MACGrid::storeParVelToGrids(Particle p){
     
     //gridU->storeParticleVelocityToGrid(p, glm::vec3(0, 0.5, 0.5), glm::vec3(1, 0, 0));
-    gridV->storeParticleVelocityToGrid(p, glm::vec3(0.5, 0, 0.5), glm::vec3(0, 1, 0), W);
+    gridV->storeParticleVelocityToGrid(p, glm::vec3(0.5, 0, 0.5), W);
     //gridW->storeParticleVelocityToGrid(p, glm::vec3(0.5, 0.5, 0), glm::vec3(0, 0, 1));
     
 }
@@ -158,13 +177,23 @@ glm::vec3 MACGrid::giveNewVelocity(Particle p) {
 
 
 void MACGrid::calculateAvgNumberOfParticlesPerGrid() {
+    
     W = 0.0f;
     
+    //right? is it avg number of particles in FLUID cells only?
+    //or is it over the entire grid
+    
     for (int numParticlesInCell : gridMarker->data) {
-        W += numParticlesInCell;
+        if(numParticlesInCell > 0) {
+             W += numParticlesInCell;
+        }
     }
-    W =  (float) W / (float)(gridMarker->data.size());
-   // std::cout << W << std::endl;
+    
+    //ask about this one lol
+    
+    W =  (float) W / (float)(numFluidCells);
+    //W = (float) W / (float) gridMarker->data.size();
+   
 }
 
 
@@ -185,7 +214,7 @@ void MACGrid::printMarker(std::string caption) {
 }
 
 void MACGrid::printDimensions() {
-    std::cout << "--- MACGRID WITH CHEESE ---" << std::endl;
+    std::cout << "--- McGRID  ---" << std::endl;
     
     std::cout << "grid dimensions " << dimX << " x " << dimY << "  " << dimZ <<std::endl;
     std::cout << "grid size " << (dimX * dimY * dimZ) << std::endl;

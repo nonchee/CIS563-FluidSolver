@@ -36,6 +36,7 @@ public:
     
     int getGridIndex(glm::vec3 position);
     int getGridIndex(int i , int j, int k);
+    glm::ivec3 getGridIJK(glm::vec3 position);
     
     
     void resetGrids();
@@ -43,7 +44,7 @@ public:
     
     
     //particle to grid
-    void storeParticleVelocityToGrid(Particle p);
+    void storeParVelToGrids(Particle p);
     
     //grid to particle
     glm::vec3 interpolateFromGrid(glm::vec3 pos) const;

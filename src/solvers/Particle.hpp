@@ -28,7 +28,7 @@ public:
     
     static std::vector<GLfloat> getParticleBaseMeshBufferData(); //the same for all particles !
     bool operator<(const Particle& that) const;
-    
+    glm::ivec3 gridIJK; 
     
     void updatePositionWithRK2();
 };
