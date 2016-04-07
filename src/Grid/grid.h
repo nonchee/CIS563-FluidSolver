@@ -34,7 +34,7 @@ public:
     
     //indexing
     int getGridIndexFromPosition(glm::vec3 position);
-    int getGridIndexFromIJK(glm::vec3 IJK);
+    int ijkToGridIndex(glm::vec3 IJK);
     glm::vec3 getGridIndices(glm::vec3 pos);
 
     //particle to grid
@@ -50,7 +50,9 @@ public:
     //force resolution
     void addForce(float f);
     void addValueAt(float value, int gridIndex);
+    void addValueAt(float value, int i, int j, int k);
     void setValueAt(float value, int gridIndex);
+    void setValueAt(float value, int i, int j, int k);
 
     //float getDivergence(int i, int j, int k);
     
@@ -62,6 +64,7 @@ public:
     
     //debugging
     void printContents(std::string message);
+    void printGridValueAt(std::string s, int i, int j, int k);
 
     
 };

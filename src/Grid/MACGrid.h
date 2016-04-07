@@ -12,7 +12,6 @@
 class MACGrid {
     
 public:
-    MACGrid(Grid<float>* U, Grid<float>* V, Grid<float>* W, Grid<float>* P);
     MACGrid(float fluidBoundX, float fluidBoundY, float fluidBoundZ, float gridCellSidelengths);
     
     int particleCount; 
@@ -23,6 +22,10 @@ public:
     float cellSidelength;
     float W; //avg number of particles per grid, for kernel function
     
+    float bbX;
+    float bbY;
+    float bbZ;
+    
     Grid<float>* gridU;    //u
     Grid<float>* gridV;    //v
     Grid<float>* gridW;    //w
@@ -32,19 +35,20 @@ public:
     void setNumFluidCells(int num);
     
     int getGridIndex(glm::vec3 position);
+    int getGridIndex(int i , int j, int k);
+    
+    
+    void resetGrids();
+    void markSolidBoundaries();
+    
     
     //particle to grid
     void storeParticleVelocityToGrid(Particle p);
     
     //grid to particle
     glm::vec3 interpolateFromGrid(glm::vec3 pos) const;
-    
-    void colorSplattedFaces(Particle p); 
 
-    void storeParticlesToGrid(std::map<int, std::vector<Particle>>* particlesByIndex);
-    
-    void resetToZero();
-    
+
     glm::vec3 giveNewVelocity(Particle p);
     void calculateAvgNumberOfParticlesPerGrid();
     

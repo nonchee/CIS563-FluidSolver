@@ -8,55 +8,50 @@
 
 FlipSolver::FlipSolver(Geom* g) {
     container = g;
+    
+    bbX = g->boxBoundX;
+    bbY = g->boxBoundY;
+    bbZ = g->boxBoundZ;
 }
 
 /// Create the MAC grid ///
 void FlipSolver::ConstructMACGrid() {
 
     //each grid dimension is enough so that a gridcell holds about 8 particles total
-    float gridCellSidelength = particleSeparation * 2;
+    mGrid = new MACGrid(bbX, bbY, bbZ, particleSeparation * 2);
     
-    std::cout << "aaaaaaagh" << std::endl;
-    std::cout << container->boxBoundX << std::endl << container->boxBoundY << std::endl <<  container->boxBoundZ << std::endl;
-   
-    
-    //construct a MAC grid out of container dimensions
-    mGrid = new MACGrid(container->boxBoundX,
-                        container->boxBoundY,
-                        container->boxBoundZ,
-                        gridCellSidelength);
+    //mGrid->printDimensions();
 }
 
 void FlipSolver::InitializeParticles() {
+    
+    /*std::cout << "fluid origin" << glm::to_string(glm::vec3(0, 0, 0)) << " " << mGrid->getGridIndex(glm::vec3(0, 0, 0)) << std::endl;
+    std::cout << " box origin" <<glm::to_string(glm::vec3(-bbX, -bbY, -bbZ)) << " " << mGrid->getGridIndex(glm::vec3(-bbX, -bbY, -bbZ)) << std::endl;
+    std::cout << " box extreme " << glm::to_string(glm::vec3(bbX, bbY, bbZ)) << " " << mGrid->getGridIndex(glm::vec3(bbX, bbY, bbZ)) << std::endl;
+    */
+    
+    std::cout << "fluid origin" << glm::to_string(glm::vec3(0, 0, 0)) << " " << mGrid->getGridIndex(glm::vec3(0, 0, 0)) << std::endl;
+    std::cout << " fluid extreme " <<glm::to_string(glm::vec3(particleBoundX, particleBoundY, particleBoundZ)) << " " << mGrid->getGridIndex(glm::vec3(particleBoundX, particleBoundY, particleBoundZ)) << std::endl;
+    
     //IT WAS FLOATING POINT ERRORS THE WHOLE TIME
     float epsilon = 0.001;
     
-    for (float i = 0; i + epsilon < particleBoundX; i+= particleSeparation) {
-        for (float j = 0; j + epsilon < particleBoundY; j += particleSeparation) {
-            for (float k = 0; k + epsilon  < particleBoundZ; k += particleSeparation) {
+    int indexOffset = bbX * bbY * bbZ;
+
+    for (float i = -bbX; i + epsilon < bbX; i+= particleSeparation) {
+        for (float j = -bbY; j + epsilon < bbY; j += particleSeparation) {
+            for (float k = -bbZ; k + epsilon  < bbZ; k += particleSeparation) {
                 
-                if (withinFluidBounds(i, j, k) ) {
-                    
+                if (withinFluidBounds(i, j, k) ) { //later make this a bounding box
                     Particle p;
                    
-                    /*float randX = 0.1 * ((float) rand())/RAND_MAX;
-                    float randY = 0.1 * ((float) rand())/RAND_MAX;
-                    float randZ  = 0.1 * ((float) rand())/RAND_MAX;
-                    glm::vec3 jitter = glm::vec3(randX, randY, randZ);
-                    std::cout << "random jitter" << glm::to_string(jitter) << std::endl;*/
-                    p.pos = glm::vec3(i, j, k); //+ jitter;
-                    //std::cout << glm::to_string(p.pos) << std::endl;
+                    p.pos = glm::vec3(i, j, k);
                     
-                    p.r = 0;
-                    p.g = 0;
-                    p.b = 255;
-                    p.a = 255;
+                    p.r = 0; p.g = 0; p.b = 255; p.a = 255; p.size = 0.1; //aesthetic choices lol
                     
-                    p.size = 0.1;
-                    
-                    //set grid index, also mark gird index
+                    //set grid index
                     p.gridIndex = mGrid->getGridIndex(p.pos);
-
+    
                     mGrid->gridMarker->addValueAt(1, p.gridIndex);
                     
                     ParticlesContainer.push_back(p);
@@ -103,11 +98,16 @@ void FlipSolver::Init() {
     
     ConstructMACGrid();
     
+    mGrid->printMarker("before fluid marker");
+    
+    
     InitializeParticles();
+    mGrid->printMarker("after fluid marker");
     
     StoreParticleVelocitiesToGrid();
     //mGrid->gridV->printContents("particles stored to gridV");
-    mGrid->gridMarker->printContents("after fluid marker");
+    mGrid->printMarker("after velocities stored marker");
+
 
 }
 
@@ -141,7 +141,7 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
     
     
     mGrid->gridV->setDeltas(deltaV);
-   // std::cout << "now hur " << mGrid->gridV->delta.size() << std::endl;
+
     
     //PressureSolve(delta);
     
@@ -232,19 +232,19 @@ void FlipSolver::MACGrid2Particle() {
 
 bool FlipSolver::withinFluidBounds(float i, float j, float k) {
     
-    return (i < particleBoundX && j < particleBoundY && k < particleBoundZ);
+    return (i >= 0 && j >= 0 && k >= 0 && i < particleBoundX && j < particleBoundY && k < particleBoundZ);
     
 }
 
-//: This function will calculate a weighted average of the particles' velocities
+//calculate a weighted average of the particles' velocities
 //in the neighborhood (define a neighborhood of 1 cell width) and store these
 //values on corresponding grid cells.
 //A simple stiff kernel can be used to calculate the weight for the average velocity.
 void FlipSolver::StoreParticleVelocitiesToGrid(){
     
-    mGrid->gridMarker->resetToZero(); // macgrid to zero
-    mGrid->resetToZero();
-   // mGrid->gridV->printContents("grid V reset to zero!");
+    //properly resets grids
+    mGrid->resetGrids();
+    mGrid->gridV->printContents("grid V reset to zero!");
 
     for (Particle p : ParticlesContainer) {
         mGrid->gridMarker->addValueAt(1, p.gridIndex); //cool so marker grid gets updated

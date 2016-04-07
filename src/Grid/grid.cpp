@@ -226,12 +226,15 @@ std::vector<glm::vec3> Grid<T>::getNeighborPositions(glm::vec3 particleIndex, gl
 }
 
 
+
+
 template<typename T>
 int Grid<T>::getGridIndexFromPosition(glm::vec3 position) {
     
     //WE ALL LOVE FLOATING POINT ERRORS
     float epsilon = 0.001;
     
+    position = position - glm::vec3(-1.5, -1.5, -1.5);
 
     //find closest multiple of cellSideLength
     int x = (position.x + epsilon)/cellSidelength;
@@ -246,7 +249,7 @@ int Grid<T>::getGridIndexFromPosition(glm::vec3 position) {
 }
 
 template<typename T>
-int Grid<T>::getGridIndexFromIJK(glm::vec3 IJK) {
+int Grid<T>::ijkToGridIndex(glm::vec3 IJK) {
 
 
     //give a 1D location for 3D index
@@ -348,7 +351,22 @@ float Grid<T>::trilinearlyInterpolate(glm::vec3 pos, glm::vec3 offset) {
 }
 
 template<typename T>
+void Grid<T>::printGridValueAt(std::string s, int i, int j, int k) {
+    if (k*dimX*dimY + j*dimX + i >= data.size()) {
+        std::cout << (k*dimX*dimY + j*dimX + i) << " lol called printgridval but u out of bounds fool " << std::endl;
+        return;
+    }
+    
+    std::cout << s << " " << i << " " << k << " " << k << " (" << (k*dimX*dimY + j*dimX + i) << ") ";
+    std::cout << data.at(k * dimX * dimY + j * dimX + i) << std::endl;
+    
+}
+
+
+
+template<typename T>
 float Grid<T>::operator()(int i, int j, int k) {
+    
 
    
     if (k*dimX*dimY + j*dimX + i >= data.size()) {
@@ -411,7 +429,7 @@ void Grid<T>::storeParticleVelocityToGrid(Particle p, glm::vec3 offset, glm::vec
 
     //splat onto neighbors
     for (glm::vec3 gridIJK : gridNeighbors) {
-        int gridIndexInArray = getGridIndexFromIJK(gridIJK); //kernelweight
+        int gridIndexInArray = ijkToGridIndex(gridIJK); //kernelweight
         float kernelWeight = getKernelWeight(pcomponent, p.pos - offset, gridIJK, W); //send offsetPos, grid
         if (kernelWeight > 0) {
             //std::cout << "kernel weight " << kernelWeight << std::endl;
@@ -436,11 +454,18 @@ void Grid<T>::addForce(float f) {
 
 template<typename T>
 void Grid<T>::addValueAt(float value, int gridIndex) {
+    if (gridIndex < data.size()) {
+        data[gridIndex] += value;
+    }
+}
+
+template<typename T>
+void Grid<T>::addValueAt(float value, int i, int j, int k)  {
+    int gridIndex = ijkToGridIndex(glm::vec3(i, j, k));
     
     if (gridIndex < data.size()) {
         data[gridIndex] += value;
     }
-
 }
 
 
@@ -450,10 +475,15 @@ void Grid<T>::setValueAt(float value, int gridIndex) {
     if (gridIndex < data.size()) {
         data[gridIndex] = value;
     }
-    
 }
 
-
+template<typename T>
+void Grid<T>::setValueAt(float value, int i, int j, int k) {
+    int gridIndex = ijkToGridIndex(glm::vec3(i, j, k));
+    if (gridIndex < data.size()) {
+        data[gridIndex] = value;
+    }
+}
 
 template<typename T>
 void Grid<T>::pressureUpdate(int index, float scale) {
@@ -471,7 +501,7 @@ void Grid<T>::pressureUpdate(Grid<float>* gridP) {
             for (int k= 0; k < dimZ; k++) {
                 
                 glm::vec3 one = glm::vec3(i, j, k);
-                int gridIndex = getGridIndexFromIJK(one);
+                int gridIndex = ijkToGridIndex(one);
                 float pressure1 = (*gridP)(i, j, k);
                 
                 glm::vec3 two = one - backwardsDir;
@@ -495,7 +525,7 @@ template<typename T>
 float Grid<T>::getDelta(int i, int j, int k) {
     
     
-    int index = getGridIndexFromIJK(glm::vec3(i, j, k));
+    int index = ijkToGridIndex(glm::vec3(i, j, k));
     if (index >= delta.size()) {
         //std::cout << index << " was out of delta bounds " << delta.size() << std::endl;
         return 0;
@@ -519,58 +549,19 @@ void Grid<T>::printContents(std::string message) {
     std::cout << message << std::endl;
     std::cout << dimX << " x " << dimY << " x " << dimZ << std::endl;
     
-    int largerDim = dimX;
-    switch(axis) {
-        case 1: largerDim = dimY; break;
-        case 2: largerDim = dimZ; break;
-        default: dimX;
-    }
-    
-
-    for (int i = data.size() - dimX; i >= 0; i++) {
-        if (i % dimX == 0) {
-            std::cout << std::endl;
-        }
-        
-        std::cout << "[" << i << ": "<< data[i] << " ]" ;
-        //std::cout << "[ " << data[i] << " ]" ;
-        
-        if (i > 0 && ((i + 1) % dimX == 0)) {
-            i -= (dimX + 2);
-        }
-        
-    }
-    
-    /*std::vector<std::vector<int>> toPrint;
-
     
     for (int i = 0; i < data.size(); i++) {
-        std::vector<int> printRow;
-        
-        if (i > 0 && (i % largerDim == 0)) {
-           // toPrint.push_back(printRow);
-           // printRow.clear();
+        if (i > 0 && i % dimX == 0) {
             std::cout << std::endl;
         }
         
-        if (i > 0 && i % (dimY * dimZ) == 0)  {
+        if (i % (dimY * dimX) == 0) {
             std::cout << std::endl;
         }
-        
-        //std::cout << i << ": " << data[i] <<" " << dimX << " " << (i % dimY) << " " << (i % dimZ);
-        //printRow.push_back(data[i]);
-        std::cout << i << ": " << data[i] << "   ";
-        
+        std::cout << i << ": " << data.at(i) << "  ";
     }
     
-    /*for (int i = 0; i < toPrint.size(); i++) {
-        std::vector<int> printRow = toPrint[i];
-        for (int j = 0; j < printRow.size(); j++) {
-            std::cout << printRow[j] << " " << std::endl;
-        }
-    }*/
-    
-    std::cout << std::endl << "--- end of grid ---" << std::endl;
+    std::cout << std::endl << "--- eog ---" << std::endl;
 }
 
 
@@ -585,7 +576,7 @@ void Grid<T>::extrapolateVelocities(Grid<int>* marker) {
                 if ((*marker)(i, j, k) == 0) {
                     
                     float avgVel;
-                    int gridIndex = getGridIndexFromIJK(glm::vec3(i, j, k));
+                    int gridIndex = ijkToGridIndex(glm::vec3(i, j, k));
                     
                     std::vector<glm::vec3> neighbors =
                         getNeighborPositions(glm::vec3(i, j, k), backwardsDir);
@@ -594,7 +585,7 @@ void Grid<T>::extrapolateVelocities(Grid<int>* marker) {
                     for (glm::vec3 neighbor : neighbors) {
                         
                         int numFluidParticles = (*marker)(neighbor.x, neighbor.y, neighbor.z) ;
-                        int neighborIndex = getGridIndexFromIJK(neighbor);
+                        int neighborIndex = ijkToGridIndex(neighbor);
                         if (numFluidParticles> 0) {
                             //if a fluid exists there, add to running average
                             avgVel += data.at(neighborIndex)/numFluidParticles;

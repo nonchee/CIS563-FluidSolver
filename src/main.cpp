@@ -40,18 +40,18 @@ void setSceneParameters() {
     std::vector<float> jsonFloats = loadJSON("../src/scene/scene.json");
 
     //set bounds of box
-    boxScaleX = 3; //jsonFloats.at(0);
-    boxScaleY = 3; //jsonFloats.at(1);
-    boxScaleZ = 3; //jsonFloats.at(2);
+    boxScaleX = 2; //jsonFloats.at(0);
+    boxScaleY = 2; //jsonFloats.at(1);
+    boxScaleZ = 2; //jsonFloats.at(2);
     boxScale = glm::scale(glm::mat4(1.0f), glm::vec3(boxScaleX, boxScaleY , boxScaleZ));
     
 
     containerGeom = new Geom(boxScaleX, boxScaleY, boxScaleZ);
     flipsolver = new FlipSolver(containerGeom);
     
-    float pboundX = 2; //jsonFloats.at(3);
-    float pboundY = 2; //jsonFloats.at(4);
-    float pboundZ = 2; //jsonFloats.at(5);
+    float pboundX = 1; //jsonFloats.at(3);
+    float pboundY = 1; //jsonFloats.at(4);
+    float pboundZ = 1; //jsonFloats.at(5);
     float psep = 0.5; //jsonFloats.at(6);
     
     //set  bounds of particles
@@ -107,6 +107,14 @@ int main( void )
     
     // box vertex data
     static const GLfloat g_box_vertex_buffer_data[] = {
+        /*-1.0f,-0.0f,-1.0f, //bottom face
+        -1.0f,-0.0f, 1.0f,
+        -1.0f,-0.0f, 1.0f,
+        1.0f, -0.0f, 1.0f,
+        1.0f, -0.0f, 1.0f,
+        1.0f, -0.0f,-1.0f,
+        1.0f, -0.0f,-1.0f,
+        -1.0f,-0.0f,-1.0f,*/
         -1.0f,-1.0f,-1.0f, //bottom face
         -1.0f,-1.0f, 1.0f,
         -1.0f,-1.0f, 1.0f,

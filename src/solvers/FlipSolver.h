@@ -29,6 +29,10 @@ class FlipSolver : public FluidSolver {
     Geom* container;
     bool gravityEnabled = true;
     bool withinFluidBounds(float i, float j, float k);
+    
+    float bbX;
+    float bbY;
+    float bbZ; 
 
 public:
     FlipSolver(Geom* g);
