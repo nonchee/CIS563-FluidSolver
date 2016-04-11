@@ -948,10 +948,7 @@ void set_from_triplets(const InputIterator& begin, const InputIterator& end, Spa
     wi.setZero();
     for(InputIterator it(begin); it!=end; ++it)
     {
-        /*std::cout << std::endl << "itrow " << it->row() << std::endl;
-        std::cout << "matrows " << mat.rows() << std::endl;
-        std::cout << "itcol " << it->col() << std::endl;
-        std::cout << "matcols " << mat.cols() << std::endl;*/
+        
     eigen_assert(it->row()>=0 && it->row()<mat.rows() && it->col()>=0 && it->col()<mat.cols());
       wi(IsRowMajor ? it->col() : it->row())++;
     }

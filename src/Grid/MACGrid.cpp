@@ -1,5 +1,6 @@
 #include "MACGrid.h"
 #include <math.h>
+
 #include "../solvers/Particle.hpp"
 
 
@@ -75,6 +76,16 @@ int MACGrid::getGridIndex(glm::vec3 position) {
     
 }
 
+void MACGrid::collisionResponse(glm::vec3 pos) {
+    
+    
+    /*if (p.gridIJK.y < 0 ) {
+        p.gridIJK = glm::ivec3(p.gridIJK.x, -bbY, p.gridIJK.z);
+        p.gridIndex= mGrid->getGridIndex(p.gridIJK.x, p.gridIJK.y, p.gridIJK.z);
+    }*/
+    
+}
+
 glm::ivec3 MACGrid::getGridIJK(glm::vec3 position) {
     //assumes that the grid starts at 000 into +x, +y, +z
     
@@ -88,7 +99,18 @@ glm::ivec3 MACGrid::getGridIJK(glm::vec3 position) {
         }
     }
     
+    if (position.y < -bbY) {
+        //position.y = 0 ; (-bbY- position.y); //set to zero
+        //std::cout << "PARTICLE ABOUT TO BE OUT OF BOUNDS " << glm::to_string(position) << std::endl;
+    }
+    
     position -= boxOrig;
+    
+    if (position.y < 0) {
+        //position.y = 0;
+        //std::cout << "THIS IS THE BOX " << glm::to_string(boxOrig) << std::endl;
+        //std::cout << "PARTICLE OUT OF BOUNDS " << glm::to_string(position) << std::endl;
+    }
     
     //find closest multiple of cellSideLength
     int x = position.x/cellSidelength;
@@ -122,16 +144,21 @@ void MACGrid::resetGrids() {
 }
 
 
-void MACGrid::addForcesToGrids(glm::vec3 forces, float delta) {
+void MACGrid::addExternalForcesToGrids(glm::vec3 forces, float dt) {
     
-    std::cout << "force to add " << forces[1] * delta << std::endl;
-    printMarker("add force to these pls");
+    std::vector<float> deltaV(gridV->data);
+    
+    std::cout << "force * dt = " << forces[1] * dt << std::endl;
+    
     
     for (int i = 0; i < dimX; i++) {
         for (int j =0; j < dimY; j++) {
             for (int k =0; k < dimZ; k++) {
                 if(isFluid(i, j, k)) {
-                  gridV->updateVel(i, j, k, forces[1] * delta);
+                    gridU->updateVel(i, j, k, forces[0] * dt);
+                    gridV->updateVel(i, j, k, forces[1] * dt);
+                    gridW->updateVel(i, j, k, forces[2] * dt);
+//                    std::cout << " whut come on " << (*gridV)(i, j, k);
                 }
             }
         }
@@ -146,77 +173,142 @@ bool MACGrid::isFluid(int i, int j, int k) {
 
 
 void MACGrid::extrapolateVelocities() {
+    gridU->extrapolateVelocities(gridMarker);
     gridV->extrapolateVelocities(gridMarker);
+    gridW->extrapolateVelocities(gridMarker); 
 }
 
 
 
 void MACGrid::storeParVelToGrids(Particle p){
     
-    //gridU->storeParticleVelocityToGrid(p, glm::vec3(0, 0.5, 0.5), glm::vec3(1, 0, 0));
+    gridU->storeParticleVelocityToGrid(p, glm::vec3(0, 0.5, 0.5), W);
     gridV->storeParticleVelocityToGrid(p, glm::vec3(0.5, 0, 0.5), W);
-    //gridW->storeParticleVelocityToGrid(p, glm::vec3(0.5, 0.5, 0), glm::vec3(0, 0, 1));
+    gridW->storeParticleVelocityToGrid(p, glm::vec3(0.5, 0.5, 0), W);
     
 }
 
 
 //call this from flipsolver
-glm::vec3 MACGrid::interpolateFromGrid(glm::vec3 pos) const {
+glm::vec3 MACGrid::interpolateFromGrid(glm::vec3 pos,
+                                       std::vector<float> deltaU,
+                                       std::vector<float> deltaV,
+                                       std::vector<float> deltaW) const {
+        
+    glm::vec3 boxOrig = glm::vec3(-bbX, -bbY, -bbZ);
     
-    float velX = gridU->trilinearlyInterpolate(pos, glm::vec3(0, 0.5, 0.5));
-    float velY = gridV->trilinearlyInterpolate(pos, glm::vec3(0.5, 0, 0.5));
-    float velZ = gridW->trilinearlyInterpolate(pos, glm::vec3(0, 0.5, 0));
+    glm::vec3 poffset = boxOrig + glm::vec3(0, 0.5, 0.5);
     
-    return glm::vec3(velX, velY, velZ);
+    float picVelX = gridU->getInterpedVelocity(pos, poffset, gridU->data); //
+    float flipVelX = gridU->getInterpedVelocity(pos, poffset, deltaU);
+    
+    
+    poffset = boxOrig + glm::vec3(0.5, 0, 0.5);
+    float picVelY = gridV->getInterpedVelocity(pos, poffset, gridV->data); //
+    float flipVelY = gridV->getInterpedVelocity(pos, poffset, deltaV);
+    
+    poffset = boxOrig + glm::vec3(0.5, 0.5, 0);
+    float picVelZ = gridW->getInterpedVelocity(pos, poffset, gridW->data); //
+    float flipVelZ = gridW->getInterpedVelocity(pos, poffset, deltaW);
+    
+    glm::vec3 picVel(0.05 * picVelX, 0.05 * picVelY, 0.05 * picVelZ);
+    glm::vec3 flipVel(0.95 * flipVelX, 0.95 * flipVelY, 0.95 * flipVelZ);
+    
+    return picVel + flipVel;
     
 }
 
-glm::vec3 MACGrid::giveNewVelocity(Particle p) {
-    
 
+void MACGrid::UpdatePressureGrid(Eigen::SparseMatrix<float> &A, Eigen::VectorXf &p, float dt) {
     
-    //for now testing with gridV only
-
-    glm::vec3 PICvel = interpolateFromGrid(p.pos);
+    float dx = cellSidelength;
+    float scale = dt/(dx * dx);
     
-    //calculate change in velocties
-    glm::vec3 FLIPvel = glm::vec3(); 
     
-    //interpolate !
+    for (int k=0; k<A.outerSize(); ++k) {
+        
+        // int prevPressure = 0;
+        for (Eigen::SparseMatrix<float>::InnerIterator it(A,k); it; ++it)
+        {
+            int count = it.value();
+            int id = it.index();
+            float pressure = p[id];
+            gridP->setValueAt(pressure, id);
+            
+        }
+    }
     
-    //FLIPvel = glm::vec3(0.95 * FLIPvel.x, 0.95 * FLIPvel.y, 0.95 * FLIPvel.z);
-    //PICvel = glm::vec3(0.05 * PICvel.x, 0.05 * PICvel.y, 0.05 * PICvel.z);
-    return FLIPvel + PICvel;
+    printMarker("these have fluids");
     
+    gridP->printContents("GRID P PRESSURE UPDATED");
 }
 
 
 
-void MACGrid::PressureUpdate(float delta) {
+
+
+void MACGrid::UpdateVelocityGridsByPressure(float delta) {
     
-    float scale = delta/(float)cellSidelength;
+    
+    float scale = delta/(float)(cellSidelength * cellSidelength);
 
     for (int i = 0; i < dimX; i++) {
         for (int j = 0; j < dimY; j++) {
             for (int k = 0; k < dimZ; k++) {
                 
-                //get position in data
+                int id;
+                int id2;
+                float pressureChange;
+                
+                //get P
                 glm::vec3 cur(i, j, k);
-                //glm::vec3 neighbV = cur - gridV->gridDir;
+                
+                //std::cout << " u: previously this " << (*gridU)(i, j, k) << std::endl;
+                glm::vec3 neighbU = cur - gridU->gridDir;
+                id = gridP->ijkToGridIndex(cur);
+                id2 = gridP->ijkToGridIndex(neighbU);
+                pressureChange = (*gridP)((glm::ivec3) cur) - (*gridP)((glm::ivec3) neighbU);
+            
+                gridU->addValueAt(-scale * pressureChange, i, j, k);
+                //std::cout << " u: does this change " << (*gridU)(i, j, k) << std::endl;
+                
+
+                //get P - 1
+
+                //std::cout << " v: previously this: does this change " << (*gridV)(i, j, k) << std::endl;
                 glm::vec3 neighbV = cur - gridV->gridDir;
-                
-                
-                int id = gridP->ijkToGridIndex(cur);
-                int id2 = gridP->ijkToGridIndex(neighbV);
-                float pressureChange = gridP->data.at(id) - gridP->data.at(id2);
-                
+                id = gridP->ijkToGridIndex(cur);
+                id2 = gridP->ijkToGridIndex(neighbV);
+                pressureChange = (*gridP)((glm::ivec3) cur) - (*gridP)((glm::ivec3) neighbV);
                 gridV->addValueAt(-scale * pressureChange, i, j, k);
+                //std::cout << " v: does this change " << (*gridV)(i, j, k) << std::endl;
+                
+               
+                /*if ((*gridW)(i, j, k) > 0 ) {
+                    std::cout << " w: previously this " << (*gridW)(i, j, k) << std::endl;
+                }*/
+         
+                glm::vec3 neighbW = cur - gridW->gridDir;
+                id = gridP->ijkToGridIndex(cur);
+                id2 = gridP->ijkToGridIndex(neighbW);
+                pressureChange = (*gridP)((glm::ivec3) cur) - (*gridP)((glm::ivec3) neighbW);
+                gridW->addValueAt(-scale * pressureChange, i, j, k); //)
+                
+                /*if ((*gridW)(i, j, k) > 0 ) {
+                    std::cout << "w: does this change "<< (*gridW)(i, j, k) << std::endl;
+                }*/
+                //std::cout << "  << (*gridW)(i, j, k) << std::endl;
                 
             }
         }
     }
-}
+   
+   /* gridU->printContents("YOLO U");
+    gridV->printContents("YOLO V");
+    gridW->printContents("YOLO W");
+    */
 
+}
 
 
 

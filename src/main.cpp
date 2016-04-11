@@ -64,10 +64,10 @@ void setSceneParameters() {
     containerGeom = new Geom(boxScaleX, boxScaleY, boxScaleZ);
     flipsolver = new FlipSolver(containerGeom);
     
-    float pboundX = 1; //jsonFloats.at(3);
-    float pboundY = 1; //jsonFloats.at(4);
-    float pboundZ = 1; //jsonFloats.at(5);
-    float psep = 0.5; //jsonFloats.at(6);
+    float pboundX = 2; //jsonFloats.at(3);
+    float pboundY = 2; //jsonFloats.at(4);
+    float pboundZ = 2; //jsonFloats.at(5);
+    float psep = 0.4; //jsonFloats.at(6);
     
     //set  bounds of particles
     flipsolver->setParticleBounds(pboundX, pboundY, pboundZ, psep);

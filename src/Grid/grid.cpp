@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <vector>
 
+#include <iomanip>
+
+
 template<typename T>
 Grid<T>::Grid() {
     
@@ -80,26 +83,357 @@ std::vector<glm::ivec3> Grid<T>::getTrilinNeighbors(glm::ivec3 pIJK) {
     std::vector<glm::ivec3> cellsToSplat;
     cellsToSplat.push_back(pIJK);
     
-    for (int axis = 0; axis < 3; axis++) {
+    for (int dimension = 0; dimension < 3; dimension++) {
         for (int dir = -1; dir < 2; dir+=2) {
             glm::ivec3 neighbDir(0, 0, 0);
-            //std::cout << "possible neighbor Dir " << glm::to_string(neighbDir) << std::endl;
-            neighbDir[axis] = dir;
+
+            if (dimension == axis && dir != -1) {
+                neighbDir[dimension] = dir;
             
-            if (inGridBounds(pIJK + neighbDir)) {
-                cellsToSplat.push_back(pIJK + neighbDir);
+            
+                if (inGridBounds(pIJK + neighbDir)) {
+                    cellsToSplat.push_back(pIJK + neighbDir);
+                }
             }
         }
     }
     return cellsToSplat;
 }
+/*
+template<typename T>
+//give grid direction to check bounds
+float Grid<T>::getInterpedVelocity(glm::vec3 ppos, glm::vec3 poffset) {//(glm::vec3 pos, glm::vec3 offset) { //offsetPos) {
+    
+    float interpedVelocity;
+    
+    //put into gridspace and get that ijk
+    glm::vec3 offsetPos = ppos - poffset;
+    glm::ivec3 ijk = posToIJK(offsetPos);
+    
+    glm::ivec3 dir0 = (glm::ivec3) gridDir;
+    glm::ivec3 dir1 = glm::ivec3(gridDir[1], gridDir[2], gridDir[0]);
+    glm::ivec3 dir2 = glm::ivec3(gridDir[2], gridDir[0], gridDir[1]);
+    
+    std::vector<glm::ivec3> trilinNeighbors;
+    
+    trilinNeighbors.push_back(ijk); //-dir0
+
+    float picWeight = 0.05;
+    float flipWeight = 0.95;
+   
+    float PICinterp1;
+    float FLIPinterp1;
+    if (inGridBounds(ijk + dir0)) {
+        
+        int neighb0index = ijkToGridIndex(ijk);
+        //int neighb1index = ijkToGridIndex(neighb0);
+        
+        glm::ivec3 neighb0 = ijk + dir0; //()
+         trilinNeighbors.push_back(neighb0); // +dir1
+        
+        float totalDist = glm::distance(offsetPos, (glm::vec3) neighb0) + glm::distance(offsetPos, (glm::vec3) ijk);
+        float weight = glm::distance(offsetPos, (glm::vec3) ijk) /totalDist;
+    
+        PICinterp1= weight * (*this)(ijk) + (1-weight)*(*this)(neighb0);
+        //FLIP interp1 = weight * deltas.at(neighb0index) + (1- weight) * (deltas.at(neighb1index));
+    }
+    else {
+        PICinterp1 = (*this)(ijk);
+    }
+    
+
+    float interp2;
+    if (inGridBounds(ijk + dir1)) {
+        glm::ivec3 neighb0 = ijk + dir1;
+        trilinNeighbors.push_back(ijk + dir1); //-dir1
+        
+        
+        float interp2a = (*this)(neighb0);
+        
+        if (inGridBounds(ijk + dir1 + dir0)) {
+            
+            glm::ivec3 neighb1 = ijk + dir1 + dir0;
+            trilinNeighbors.push_back(ijk + dir1 + dir0); //+dir1
+            
+            float totalDist = glm::distance(offsetPos, (glm::vec3) neighb1) + glm::distance(offsetPos, (glm::vec3) neighb0);
+            float weight = glm::distance(offsetPos, (glm::vec3) neighb0) / totalDist;
+            
+            interp2 = weight * interp2a + (*this)(neighb1);
+        }
+        else {
+            interp2 = interp2a;
+        }
+    }
+
+    
+    float interp3;
+    if (inGridBounds(ijk + dir2)) {
+        glm::ivec3 neighb0 = ijk + dir2;
+        trilinNeighbors.push_back(ijk + dir2); //-dir1
+        
+        
+        float interp2a = (*this)(neighb0);
+        
+        if (inGridBounds(ijk + dir2 + dir0)) {
+            glm::ivec3 neighb1 = ijk + dir2 + dir0;
+            trilinNeighbors.push_back(ijk + dir2 + dir0); //+dir1
+            
+            float totalDist = glm::distance(offsetPos, (glm::vec3) neighb0) + glm::distance(offsetPos, (glm::vec3) ijk);
+            float weight = glm::distance(offsetPos, (glm::vec3) neighb0) / totalDist;
+            
+            interp3 = weight * interp2a + (*this)(neighb1);
+            
+        }
+        else {
+            interp3 = interp2a;
+        }
+    }
+    
+    float interp4;
+    if (inGridBounds(ijk + dir1 + dir2)) {
+        glm::ivec3 neighb0 = ijk + dir1 + dir2;
+        trilinNeighbors.push_back(ijk + dir1 + dir2); //-dir1
+        
+        
+        float interpa = (*this)(neighb0);
+        
+        if (inGridBounds(ijk + dir2 + dir1 + dir0)) {
+            glm::ivec3 neighb1 = ijk + dir2 + dir1 + dir0;
+            trilinNeighbors.push_back(ijk + dir2 + dir1 + dir0); //+dir1
+            
+            
+            float totalDist = glm::distance(offsetPos, (glm::vec3) neighb0) + glm::distance(offsetPos, (glm::vec3) ijk);
+            float weight = glm::distance(offsetPos, (glm::vec3) neighb0) / totalDist;
+        
+            interp4 = weight * interpa + (*this)(neighb1);
+        }
+        else {
+            interp4 = interpa;
+        }
+    }
+    
+    
+    
 
 
+    return interpedVelocity;
+}
+*/
+
+template<typename T>
+//give grid direction to check bounds
+float Grid<T>::getInterpedVelocity(glm::vec3 ppos, glm::vec3 poffset, std::vector<float> deltas) {
+    
+    float interpedFLIPVelocity;
+    std::vector<glm::ivec3> trilinNeighbors;
+    
+    //put into gridspace and get that ijk
+    glm::vec3 offsetPos = ppos - poffset;
+    glm::ivec3 ijk = posToIJK(offsetPos);
+    
+    if (!inGridBounds(ijk)) {
+        
+        std::cout << " LOL WHAT YOU DOING OUT OF BOUNDS " << std::endl;
+        std::cout << " ppos " << glm::to_string(ppos) << std::endl;
+        std::cout << " ijk " << glm::to_string(ijk) << std::endl;
+    }
+                 
+    int ijkindex = ijkToGridIndex(ijk);
+
+    
+    trilinNeighbors.push_back(ijk); //-dir0
+    
+    glm::ivec3 dir0 = (glm::ivec3) gridDir;
+    glm::ivec3 dir1 = glm::ivec3(gridDir[1], gridDir[2], gridDir[0]);
+    glm::ivec3 dir2 = glm::ivec3(gridDir[2], gridDir[0], gridDir[1]);
+    
+    float FLIPinterp1;
+    std::vector<float> interps;
+    if (inGridBounds(ijk + dir0)) {
+    
+        glm::ivec3 neighb1 = ijk + dir0;
+        int neighb1index = ijkToGridIndex(neighb1);
+        
+        float totalDist = glm::distance(offsetPos, (glm::vec3) neighb1) + glm::distance(offsetPos, (glm::vec3) ijk);
+        float weight = glm::distance(offsetPos, (glm::vec3) ijk) /totalDist;
+        
+        FLIPinterp1= weight * deltas.at(ijkindex) + (1-weight)*(deltas.at(neighb1index));
+        }
+    else {
+        
+        FLIPinterp1 = deltas.at(ijkindex);
+    }
+    
+    interps.push_back(FLIPinterp1);
+    
+    float FLIPinterp2;
+    if (inGridBounds(ijk + dir1)) {
+        glm::ivec3 neighb0 = ijk + dir1;
+        //trilinNeighbors.push_back(ijk + dir1); //-dir1
+        int neighb0index = ijkToGridIndex(neighb0);
+        
+        float interp2a = deltas.at(neighb0index);
+        
+        if (inGridBounds(ijk + dir1 + dir0)) {
+            
+            glm::ivec3 neighb1 = ijk + dir1 + dir0;
+            int neighb1index = ijkToGridIndex(neighb1);
+            
+            //trilinNeighbors.push_back(ijk + dir1 + dir0); //+dir1
+            
+            float totalDist = glm::distance(offsetPos, (glm::vec3) neighb0) + glm::distance(offsetPos, (glm::vec3) neighb1);
+            float weight = glm::distance(offsetPos, (glm::vec3) neighb0) / totalDist;
+            
+            FLIPinterp2 = weight * interp2a + (1 - weight) *(deltas.at(neighb1index));
+        }
+        else {
+            FLIPinterp2 = interp2a;
+        }
+    }
+    else {
+        FLIPinterp2 = deltas.at(ijkindex);
+    }
+    
+    interps.push_back(FLIPinterp2);
+    
+    
+    float FLIPinterp3;
+    if (inGridBounds(ijk + dir2)) {
+        glm::ivec3 neighb0 = ijk + dir2;
+        trilinNeighbors.push_back(ijk + dir2); //-dir1
+        
+        int neighb0index = ijkToGridIndex(neighb0);
+        float interp2a = deltas.at(neighb0index);
+        
+        if (inGridBounds(ijk + dir2 + dir0)) {
+            glm::ivec3 neighb1 = ijk + dir2 + dir0;
+            //trilinNeighbors.push_back(ijk + dir2 + dir0); //+dir1
+            
+            float totalDist = glm::distance(offsetPos, (glm::vec3) neighb0)
+                + glm::distance(offsetPos, (glm::vec3) neighb1);
+            
+            float weight = glm::distance(offsetPos, (glm::vec3) neighb0) / totalDist;
+            
+            int neighb1index = ijkToGridIndex(neighb1);
+            FLIPinterp3 = weight * interp2a + (1 - weight)* deltas.at(neighb1index);
+            
+        }
+        else {
+            FLIPinterp3 = interp2a;
+        }
+    }
+    else {
+        FLIPinterp3 = deltas.at(ijkindex);
+    }
+    
+    
+    interps.push_back(FLIPinterp3);
+    
+    
+    float FLIPinterp4;
+    if (inGridBounds(ijk + dir1 + dir2)) {
+        glm::ivec3 neighb0 = ijk + dir1 + dir2;
+        trilinNeighbors.push_back(ijk + dir1 + dir2); //-dir1
+        
+        
+        int neighb0index = ijkToGridIndex(neighb0);
+        float interpa = deltas.at(neighb0index);
+        
+        if (inGridBounds(ijk + dir2 + dir1 + dir0)) {
+            glm::ivec3 neighb1 = ijk + dir2 + dir1 + dir0;
+            //trilinNeighbors.push_back(ijk + dir2 + dir1 + dir0); //+dir1
+            int neighb1index = ijkToGridIndex(neighb1);
+            
+            float totalDist = glm::distance(offsetPos, (glm::vec3) neighb0)
+                + glm::distance(offsetPos, (glm::vec3) neighb1);
+            float weight = glm::distance(offsetPos, (glm::vec3) neighb0) / totalDist;
+            
+            FLIPinterp4 = weight * interpa + (1-weight)*deltas.at(neighb1index);
+        }
+        else {
+            FLIPinterp4 = interpa;
+        }
+    }
+    else {
+        FLIPinterp4 = deltas.at(ijkindex);
+    }
+    
+    
+    interps.push_back(FLIPinterp4);
+    
+    std::vector<glm::ivec3> trilinNeighbors2;
+    std::vector<float> interps2;
+    for (int i = 0; i < trilinNeighbors.size() - 1; i+=2) {
+        
+        glm::ivec3 neighb0 = trilinNeighbors.at(i);
+        glm::ivec3 neighb1 = trilinNeighbors.at(i + 1);
+        
+   
+        
+        float totalDist = glm::distance(offsetPos, (glm::vec3) neighb0) + glm::distance(offsetPos, (glm::vec3) neighb1);
+        float weight = glm::distance(offsetPos, (glm::vec3) neighb0) / totalDist;
+        
+        trilinNeighbors2.push_back(neighb0);
+        interps2.push_back(weight * interps.at(i)  + (1- weight)* (interps.at(i + 1))); //)
+        
+    }
+    if (interps.size() < 2 || trilinNeighbors.size() < 2) {
+        interps2.push_back(interps.at(0));
+    }
+    
+    if(interps.size() < 1 || trilinNeighbors.size() < 1) {
+        std::cout << " lol where'd all my neighbors go" << std::endl;
+    }
+    
+    float FLIPinterp6 = 0;
+    if (trilinNeighbors2.size()> 1) {
+        glm::ivec3 neighb0 = trilinNeighbors2.at(0);
+        glm::ivec3 neighb1 = trilinNeighbors2.at(1);
+        float totalDist = glm::distance(offsetPos, (glm::vec3) neighb0) + glm::distance(offsetPos, (glm::vec3) neighb1);
+        float weight = glm::distance(offsetPos, (glm::vec3) neighb0) / totalDist;
+        
+        FLIPinterp6 += weight * deltas.at(interps2.at(0))  + (1- weight)*(interps2.at(1));
+        
+    }
+    
+    else {
+        FLIPinterp6 = interps2.at(0);
+        
+    }
+    
+    if (trilinNeighbors2.size()> 2) {
+        std::cout << " whaaaat " << trilinNeighbors2.size() << " neighbors lol " << std::endl;
+    }
+
+    
+    interpedFLIPVelocity = FLIPinterp6;
+    return interpedFLIPVelocity;
+}
+
+template<typename T>
+float Grid<T>::getDiv(int i, int j, int k) {
+    glm::ivec3 here(i, j, k);
+    glm::ivec3 there = here + (glm::ivec3) gridDir;
+    
+    int ind0 = ijkToGridIndex(here);
+    int ind1 = ijkToGridIndex(there);
+    
+    
+    if(inGridBounds(there)) {
+        
+        return data.at(ind1) - data.at(ind0);
+    }
+       
+    else {
+           return 0 - data.at(ind0);
+    }
+}
 
 
 //@params ijk of the grid's cube       //@return a 1D vector index
 template<typename T>
 int Grid<T>::ijkToGridIndex(glm::vec3 IJK) {
+    
     return (IJK.z * dimX * dimY) + (IJK.y * dimX) + IJK.x;
 }
 
@@ -111,98 +445,34 @@ int Grid<T>::ijkToGridIndex(glm::ivec3 IJK) {
 }
 
 
-glm::vec3 posToGridIJK(glm::vec3 pos, float cellSidelength){
-    //because a nancy never forgets
-    float epsilon = 0.001;
-    
-    //find the i, j, and k indices
-    int xidx = (pos.x + epsilon)/cellSidelength;
-    int yidx = (pos.y + epsilon)/cellSidelength;
-    int zidx = (pos.z + epsilon)/cellSidelength;
-    
-    return glm::vec3(xidx, yidx, zidx);
-}
-
-
-//trilinearly interpolate for each value
 template<typename T>
-float Grid<T>::trilinearlyInterpolate(glm::vec3 pos, glm::vec3 offset) {
-    float interpolatedVel;
-    
-    //get offset to put into gridSpace
-    glm::vec3 offsetPos = pos + offset;
-    
-    //because a nancy never forgets
+glm::ivec3 Grid<T>::posToIJK(glm::vec3 pos){
+   
     float epsilon = 0.001;
     
-    //find the i, j, and k indices
-    int xidx = (pos.x + epsilon)/cellSidelength;
-    int yidx = (pos.y + epsilon)/cellSidelength;
-    int zidx = (pos.z + epsilon)/cellSidelength;
-    
-    glm::vec3 indices = glm::vec3(xidx, yidx, zidx);
-    
-    for (int i = 0; i < 3; i++) {
-        
-        //get closest idx on axis
-        int idx = indices[i];
-        
-        //i, j, k, is the prior to direction, and otherIdx(i, j, k) is the before direction;
-        glm::vec3 otherIdx = indices;
-        otherIdx[i] = indices[i] + 1;
-        
-        //get weight of position (in grid space) between idx-1 and idx
-        float weightX = offsetPos[i]  -  otherIdx[i];
-        
-        //interpolate the velocity!
-        interpolatedVel = weightX * ((*this)(otherIdx.x, otherIdx.y, otherIdx.z))
-        + (1 - weightX) * ((*this)(indices.x, indices.y, indices.z));
+
+    for(int i = 0; i < 3; i++) {
+        if (pos[i] != 0)  {
+            pos[i] -= epsilon;
+        }
     }
     
-    //test to make sure this is some sort of (x, 0, 0) (0, y, 0) or (0, 0, z)
-    return interpolatedVel;
+    //find closest multiple of cellSideLength
+    int x = pos.x/cellSidelength;
+    int y = pos.y/cellSidelength;
+    int z = pos.z/cellSidelength;
     
-    
-    /*float interpolatedVel;
-    
-    //get offset to put into gridSpace
-    glm::vec3 offsetPos = pos + offset;
-    glm::vec3 gridIndices = posToGridIJK(offsetPos, cellSidelength);
-    
-    
-    int i = floor(offsetPos.x);
-    int j = floor(offsetPos.y);
-    int k = floor(offsetPos.z);
-    
-    /*return (i+1-offsetPos.x) * (j+1-offsetPos.y) * (k+1-offsetPos.z) * cell(i, j, k).u[index] +
-    (x-i) * (j+1-y) * (k+1-z) * cell(i+1, j, k).u[index] +
-    (i+1-x) * (y-j) * (k+1-z) * cell(i, j+1, k).u[index] +
-    (x-i) * (y-j) * (k+1-z) * cell(i+1, j+1, k).u[index] +
-    (i+1-x) * (j+1-y) * (z-k) * cell(i, j, k+1).u[index] +
-    (x-i) * (j+1-y) * (z-k) * cell(i+1, j, k+1).u[index] +
-    (i+1-x) * (y-j) * (z-k) * cell(i, j+1, k+1).u[index] +
-    (x-i) * (y-j) * (z-k) * cell(i+1, j+1, k+1).u[index];
-    
-
-    //i, j, k, is the forward direction, and otherIdx(i, j, k)
-    //is the backward direction;
-    glm::vec3 prevIndices = gridIndices;
-    prevIndices = gridIndices - backwardsDir;
-    float backwardsVal = (*this)(prevIndices.x, prevIndices.y, prevIndices.z);
-    float forwardsVal = (*this)(gridIndices.x, gridIndices.y, gridIndices.z);
-    
-
-    
-    //get weight of position (in grid space) between idx-1 and idx
-    float weightX = offsetPos[axis] - prevIndices[axis];
-        
-    //interpolate the velocity!
-    interpolatedVel = weightX * backwardsVal + (1 - weightX) * forwardsVal;
-
-    //test to make sure this is some sort of (x, 0, 0) (0, y, 0) or (0, 0, z)
-    return interpolatedVel;*/
-
+    return glm::ivec3(x, y, z);
 }
+
+/*template<typename T>
+bool Grid<T>::isInBounds(glm::ivec3 ijk) {
+    return ijk.x >= 0 && ijk.y >= 0 && ijk.z >= 0
+        && ijk.x < dimX && ijk.y < dimY && ijk.z < dimZ ;
+    
+}*/
+
+
 
 template<typename T>
 void Grid<T>::printGridValueAt(std::string s, int i, int j, int k) {
@@ -222,9 +492,6 @@ template<typename T>
 float Grid<T>::operator()(int i, int j, int k) {
     if (k*dimX*dimY + j*dimX + i >= data.size()) {
         
-        /*std::cout << (k*dimX*dimY + j*dimX + i) << " lol u out of bounds fool " << std::endl;
-        std::cout << "  " << i <<  " " << j << " " <<k <<  " need to be within ";
-        std::cout << "  " << dimX <<  " " << dimY << " " << dimZ <<  std::endl;*/
         return 0;
     }
     else  {
@@ -232,7 +499,14 @@ float Grid<T>::operator()(int i, int j, int k) {
     }
 }
 
-
+template<typename T>
+float Grid<T>::operator()(glm::ivec3 indices) {
+    int i = indices.x;
+    int j = indices.y;
+    int k = indices.z;
+    
+    return (*this)(i, j,k);
+}
 
 
 
@@ -248,16 +522,19 @@ void Grid<T>::storeParticleVelocityToGrid(Particle p, glm::vec3 offset, float W)
     glm::vec3 offsetPos = ((glm::vec3) p.gridIJK) - offset;
 
     //get neighbors of particle in grid
-    //find for now because never at grid bounds
     std::vector<glm::ivec3> cellsToSplat = getTrilinNeighbors(p.gridIJK);
     
 
     //splat onto neighbors
     for (glm::ivec3 neighborCell : cellsToSplat) {
+        if (!inGridBounds(neighborCell)) {
+            continue;
+        }
+        
         int neighbor1DIndex = ijkToGridIndex(neighborCell);
         float kernelWeight = getKernelWeight(pcomponent, offsetPos, neighborCell, W);
-        std::cout << glm::to_string(p.gridIJK) << std::endl;
-        std::cout << "neighbor ind " << neighbor1DIndex << std::endl;
+        
+        std::cout <<neighbor1DIndex << std::endl;
         data.at(neighbor1DIndex) += kernelWeight * pcomponent;
     }
 
@@ -271,6 +548,8 @@ void Grid<T>::updateVel(int i, int j, int k, float delU) {
     data[index] += delU;
     
 }
+
+
 
 //oops rather redundant
 template<typename T>
@@ -321,6 +600,7 @@ void Grid<T>::pressureUpdate(int index, float scale) {
 
 template<typename T>
 void Grid<T>::pressureUpdate(Grid<float>* gridP) {
+    
     for (int i = 0; i < dimX; i++) {
         for (int j = 0; j < dimY; j++) {
             for (int k= 0; k < dimZ; k++) {
@@ -330,14 +610,10 @@ void Grid<T>::pressureUpdate(Grid<float>* gridP) {
                 float pressure1 = (*gridP)(i, j, k);
                 
                 glm::vec3 two = one - gridDir;
-               // std::cout << "two " << glm::to_string(two) << std::endl;
                 
                 float pressure2 = (*gridP)(two.x, two.y, two.z);
                 float pressurechange = pressure2 - pressure1;
-                /*std::cout << "pressure 1 " << pressure2 << std::endl;
-                std::cout << "pressure 2 " << pressure1 << std::endl;
-                std::cout << "pressure change " << pressurechange << std::endl;
-                */
+
                 data[gridIndex] -= pressurechange;
             }
         }
@@ -448,7 +724,28 @@ void Grid<T>::printContents(std::string message) {
         if (i % (dimY * dimX) == 0) {
             std::cout << std::endl;
         }
-        std::cout << i << ": " << data.at(i) << "  ";
+        std::cout << i << ": " << std::setprecision(3) << data.at(i) << "  ";
+    }
+    
+    std::cout << std::endl << "--- eog ---" << std::endl;
+}
+
+template<typename T>
+void Grid<T>::printDeltas(std::string message) {
+    
+    std::cout << message << std::endl;
+    std::cout << dimX << " x " << dimY << " x " << dimZ << std::endl;
+    
+    
+    for (int i = 0; i < data.size(); i++) {
+        if (i > 0 && i % dimX == 0) {
+            std::cout << std::endl;
+        }
+        
+        if (i % (dimY * dimX) == 0) {
+            std::cout << std::endl;
+        }
+        std::cout << i << ": " << delta.at(i) << "  ";
     }
     
     std::cout << std::endl << "--- eog ---" << std::endl;

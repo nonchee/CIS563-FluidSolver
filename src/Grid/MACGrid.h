@@ -8,6 +8,9 @@
 #include "../solvers/Particle.hpp"
 #include <map>
 #include <vector>
+#include <Eigen/IterativeLinearSolvers>
+#include <Eigen/Sparse>
+#include <Eigen/Core>
 
 class MACGrid {
     
@@ -43,20 +46,24 @@ public:
     void resetGrids();
     void markSolidBoundaries();
     
-    void addForcesToGrids(glm::vec3 force, float delta);
+    void addExternalForcesToGrids(glm::vec3 force, float delta);
     
     
     //particle to grid
     void storeParVelToGrids(Particle p);
     
+    void collisionResponse(glm::vec3 pos);
+    
     //grid to particle
-    glm::vec3 interpolateFromGrid(glm::vec3 pos) const;
+    glm::vec3 interpolateFromGrid(glm::vec3 pos,
+                                  std::vector<float> deltaU,
+                                  std::vector<float> deltaV,
+                                  std::vector<float> deltaW) const;
 
-
-    glm::vec3 giveNewVelocity(Particle p);
     void calculateAvgNumberOfParticlesPerGrid();
     
-    void PressureUpdate(float delta);
+    void UpdatePressureGrid(Eigen::SparseMatrix<float> &A, Eigen::VectorXf &p, float dt);
+    void UpdateVelocityGridsByPressure(float delta);
     
     void extrapolateVelocities();
     void printMarker(std::string caption);

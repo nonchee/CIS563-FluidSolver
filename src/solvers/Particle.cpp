@@ -39,22 +39,5 @@ void Particle::updatePositionWithRK2() {
                                    (fwdEulerPos.z + pos.z)/2 );
     
     std::cout << " new pos " << glm::to_string(pos) << std::endl;
-
-    //forward euler
-    
-    
-    //midpoint
-    
-    //new velocity
-    
-    //new velocity
-   /* double K1 = (H * f(x,y));
-    double K2 = (H * f((x + 1 / 2 * H), (y + 1 / 2 * K1)));
-    double K3 = (H * f((x + 1 / 2 * H), (y + 1 / 2 * K2)));
-    double K4 = (H * f((x + H), (y + K3)));     double runge = (y + (1 / 6) * (K1 + 2 * K2 + 2 * K3 + K4));
-    positio = runge;
-    
-    Reference https://www.physicsforums.com/threads/runge-kutta-in-c.1448/
-*/
 }
 

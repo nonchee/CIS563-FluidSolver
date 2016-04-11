@@ -57,7 +57,8 @@ public:
     
     glm::vec3 InterpolateVelocity(const glm::vec3& pos, const MACGrid& mGrid);
     
-    void MACGrid2Particle(float delta);
+    //void MACGrid2Particle(float delta);
+    void MACGrid2Particle(float delta, std::vector<float> deltaU, std::vector<float> deltaV, std::vector<float> deltaW);
     
     
     void updateGravity();
@@ -76,7 +77,6 @@ public:
     void buildA(Eigen::SparseMatrix<float>& A, std::vector<Eigen::Triplet<float> >& coeffs);
     void buildb(Eigen::VectorXf& b);
     void PressureSolve(float dt);
-    //void PressureUpdate(Eigen::SparseMatrix<float>& A, float dt);
     void PressureUpdate(Eigen::SparseMatrix<float> &A,Eigen::VectorXf &p, float dt);
 
     
