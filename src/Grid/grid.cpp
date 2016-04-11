@@ -662,11 +662,6 @@ void Grid<T>::extrapolateVelocities(Grid<int>* marker) {
                     float totalVel = 0;
                     
                     int gridIndex = ijkToGridIndex(glm::vec3(i, j, k));
-                    
-                    ///printVector(glm::vec3(i, j,k), "me");
-                    //std::cout << " my index " << gridIndex << std::endl;
-                    
-                    
                     std::vector<glm::ivec3> neighbors = getTrilinNeighbors(glm::ivec3(i, j, k));
                     int numNeighbors = 0;
                     
@@ -678,14 +673,9 @@ void Grid<T>::extrapolateVelocities(Grid<int>* marker) {
                             //std::cout << "    new total vel " << totalVel << "from " << ijkToGridIndex(neighbor) << std::endl;
                             numNeighbors++;
                         }
-                        
                     }
-                    
                     //can't just use neighbrs.size() because trilin is quite general
                     if (numNeighbors > 0) {
-                       
-                       // std::cout << "  pls extrap " << totalVel/(float)numNeighbors << " to grid index " << gridIndex << std::endl;
-                        //std::cout << "  this many fluid neighbors " << numNeighbors  <<std::endl<< std::endl;
                         data.at(gridIndex) = totalVel/(float)numNeighbors;
                     }
                 }

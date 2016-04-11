@@ -422,7 +422,7 @@ void FlipSolver::buildA(Eigen::SparseMatrix<float>& A, std::vector<Eigen::Triple
     
     A.setFromTriplets(coeffs.begin(), coeffs.end());
     
-    std::cout << "AYY " << A << std::endl;
+    //std::cout << "AYY " << A << std::endl;
     
 }
 
@@ -460,7 +460,7 @@ void FlipSolver::buildb(Eigen::VectorXf& b) {
         }
     }
     
-     std::cout << "B " << b << std::endl;
+    // std::cout << "B " << b << std::endl;
 }
 
 
