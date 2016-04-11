@@ -12,7 +12,7 @@ template<typename T>
 class Grid {
     
     static const GLfloat* grid_vertex_buffer_data_array;
-    //ofstream myfile;
+    std::ofstream gridFile;
 
     
 public:

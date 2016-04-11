@@ -18,7 +18,6 @@ FlipSolver::FlipSolver(Geom* g) {
 void FlipSolver::ConstructMACGrid() {
     
     mGrid = new MACGrid(bbX, bbY, bbZ, particleSeparation * 2);
-    
     mx = mGrid->dimX;
     my = mGrid->dimY;
     mz = mGrid->dimZ; 
@@ -89,9 +88,10 @@ void FlipSolver::FlipUpdate(float delta, float boxScaleX, float boxScaleY,
     //mGrid->gridV->printContents("grid V after flip update");
     ///put particle onto grid
     StoreParticleVelocitiesToGrid();
+
     
     //mGrid->gridU->printContents("FLIP() PAR2GRID");
-    mGrid->gridV->printContents("FLIP() PAR2GRID");
+    //mGrid->gridV->printContents("FLIP() PAR2GRID");
     //mGrid->gridW->printContents("FLIP() PAR2GRID");
    
     ///save old grids
@@ -147,7 +147,7 @@ void FlipSolver::MACGrid2Particle(float delta, std::vector<float> deltaU,
     for (Particle p : ParticlesContainer) {
         
         //collision detection! if the particle leaves the container
-        if (!container->insideContainer(p.pos)) {
+       /* if (!container->insideContainer(p.pos)) {
 
             p.pos.y = -bbY;
             
@@ -156,7 +156,7 @@ void FlipSolver::MACGrid2Particle(float delta, std::vector<float> deltaU,
             
             //set particle color
             p.r = 0; p.g = 255; p.b = 255;
-        }
+        }*/
         
         
         //GET TRILIN INTERP
@@ -181,18 +181,18 @@ void FlipSolver::MACGrid2Particle(float delta, std::vector<float> deltaU,
         glm::vec3 flipVel(flipWeight * flipVelX, flipWeight * flipVelY, flipWeight * flipVelW);
         
         
-        p.speed = picVel + flipVel;
+        glm::vec3 fwdEulerSpeed(picVel + flipVel);
         
-        glm::vec3 fwdEulerPos = p.pos + p.speed * delta;
+        glm::vec3 fwdEulerPos = p.pos + (fwdEulerSpeed * delta);
         glm::vec3 midpoint = glm::vec3((fwdEulerPos.x + p.pos.x)/2,
                                        (fwdEulerPos.y + p.pos.y)/2,
                                        (fwdEulerPos.z + p.pos.z)/2);
         
-        glm::vec3 midEuler = picVel + flipVel; // super basic ho for now
+        glm::vec3 midEuler = picVel + flipVel;
         
-        p.speed = midEuler;
+        p.speed = fwdEulerSpeed; // super basic ho for now
         
-        p.pos =  midpoint + midEuler * (delta/2.0f);
+        p.pos =  midpoint + p.speed * (delta/2.0f);
 
         
         p.gridIJK = mGrid->getGridIJK(p.pos);
@@ -221,19 +221,23 @@ bool FlipSolver::withinFluidBounds(float i, float j, float k) {
 void FlipSolver::StoreParticleVelocitiesToGrid(){
     
     //properly resets each grid
+    //UVW get reset to 0
+    //marker gets reset to 0s and -1s at boundaries
     mGrid->resetGrids();
     
     //mGrid->gridV->printContents("grid V reset to zero!");
 
+    std::vector<int> fluidMarkerIDs;
     for (Particle p : ParticlesContainer) {
-        
-        int markerIndex = mGrid->gridMarker->ijkToGridIndex(p.gridIJK);
-        mGrid->gridMarker->setValueAt(1, markerIndex); //cool so marker grid gets updated
+        mGrid->storeParPosToMarker(p);
+        fluidMarkerIDs.push_back(p.gridIndex);
         mGrid->storeParVelToGrids(p);
     }
     
+
+    
     //mGrid->printMarker("particles stored to marker");
-    mGrid->gridV->printContents("flipsolver::storepar2grid()  particles stored to gridV");
+   // mGrid->gridV->printContents("flipsolver::storepar2grid()  particles stored to gridV");
     //mGrid->storeParticlesToGrid(&particlesByIndex);
 
     
@@ -404,7 +408,6 @@ void FlipSolver::buildA(Eigen::SparseMatrix<float>& A, std::vector<Eigen::Triple
                     fluidNeighborCount += insertCoeff(pressure_id, i,j, k + 1, coeffs);
                 
                     
-                    //std::cout << " fluid neighbors: " << fluidNeighborCount << std::endl;
                     //current
                     coeffs.push_back(Eigen::Triplet<float> (pressure_id, pressure_id, fluidNeighborCount));
                     

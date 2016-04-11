@@ -76,13 +76,10 @@ int MACGrid::getGridIndex(glm::vec3 position) {
     
 }
 
-void MACGrid::collisionResponse(glm::vec3 pos) {
+void MACGrid::storeParPosToMarker(Particle p) {
     
-    
-    /*if (p.gridIJK.y < 0 ) {
-        p.gridIJK = glm::ivec3(p.gridIJK.x, -bbY, p.gridIJK.z);
-        p.gridIndex= mGrid->getGridIndex(p.gridIJK.x, p.gridIJK.y, p.gridIJK.z);
-    }*/
+    int markerIndex = gridMarker->ijkToGridIndex(p.gridIJK);
+    gridMarker->setValueAt(1, markerIndex); //cool so marker grid gets updated
     
 }
 
@@ -139,6 +136,7 @@ void MACGrid::resetGrids() {
     gridU->resetToZero();
     gridV->resetToZero();
     gridW->resetToZero();
+    markSolidBoundaries();
     
     //DON'T reset pressures to zero
 }
@@ -240,7 +238,7 @@ void MACGrid::UpdatePressureGrid(Eigen::SparseMatrix<float> &A, Eigen::VectorXf 
     
     printMarker("these have fluids");
     
-    gridP->printContents("GRID P PRESSURE UPDATED");
+    //gridP->printContents("GRID P PRESSURE UPDATED");
 }
 
 
@@ -344,7 +342,13 @@ void MACGrid::printMarker(std::string caption) {
         if (i % ((gridMarker->dimY)*(gridMarker->dimX)) == 0) {
             std::cout << std::endl;
         }
-        std::cout << i << ": " << gridMarker->data.at(i) << "  ";
+        
+        if (gridMarker->data.at(i) > 0) {
+            std::cout << "[" <<i << ": " << gridMarker->data.at(i) << "]  ";
+        }
+        else {
+          std::cout << i << ": " << gridMarker->data.at(i) << "  ";
+        }
     }
     std::cout << std::endl;
 }

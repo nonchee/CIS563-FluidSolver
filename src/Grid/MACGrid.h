@@ -47,7 +47,7 @@ public:
     void markSolidBoundaries();
     
     void addExternalForcesToGrids(glm::vec3 force, float delta);
-    
+    void storeParPosToMarker(Particle p); 
     
     //particle to grid
     void storeParVelToGrids(Particle p);

@@ -57,7 +57,6 @@ public:
     
     glm::vec3 InterpolateVelocity(const glm::vec3& pos, const MACGrid& mGrid);
     
-    //void MACGrid2Particle(float delta);
     void MACGrid2Particle(float delta, std::vector<float> deltaU, std::vector<float> deltaV, std::vector<float> deltaW);
     
     

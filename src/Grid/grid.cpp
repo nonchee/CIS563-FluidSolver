@@ -533,8 +533,6 @@ void Grid<T>::storeParticleVelocityToGrid(Particle p, glm::vec3 offset, float W)
         
         int neighbor1DIndex = ijkToGridIndex(neighborCell);
         float kernelWeight = getKernelWeight(pcomponent, offsetPos, neighborCell, W);
-        
-        std::cout <<neighbor1DIndex << std::endl;
         data.at(neighbor1DIndex) += kernelWeight * pcomponent;
     }
 
@@ -619,7 +617,6 @@ void Grid<T>::pressureUpdate(Grid<float>* gridP) {
         }
     }
     
-    std::cout << std::endl;
 }
 
 template<typename T>
@@ -628,20 +625,15 @@ float Grid<T>::getDelta(int i, int j, int k) {
     
     int index = ijkToGridIndex(glm::vec3(i, j, k));
     if (index >= delta.size()) {
-        //std::cout << index << " was out of delta bounds " << delta.size() << std::endl;
         return 0;
     }
     
-    //std::cout << index<< std::endl;
-    //std::cout << delta.size() << std::endl;
     return delta[index];
 }
 
 template<typename T>
 void Grid<T>::setDeltas(std::vector<float> calculatedDeltas) {
-    //std::cout << " calculated deltas! " << calculatedDeltas.size() << std::endl;
     delta = calculatedDeltas;
-    //std::cout << " deltas! " << delta.size() << std::endl;
 }
 
 
@@ -655,13 +647,35 @@ void Grid<T>::extrapolateVelocities(Grid<int>* marker) {
     for (int i = 0; i < dimX; i++) {
         for (int j = 0; j < dimY; j++) {
             for (int k = 0; k < dimZ; k++) {
+                
+                float totalVel = 0;
+                
+                int gridIndex = ijkToGridIndex(glm::vec3(i, j, k));
+                
+                switch (axis) {
+                    case 0:
+                        if (i == 0 || i == dimX - 1) {
+                            data.at(gridIndex) = 0;
+                        }
+                        break;
+                    case 1: //std::cout << " I AM A V GRID " << std::endl;
+                        if (j == 0 || j == dimY - 1) {
+                            data.at(gridIndex) = 0;
+                        }
+                        break;
+                    case 2: //std::cout << " I AM A W GRID " << std::endl;
+                        if (k == 0 || k == dimZ - 1) {
+                            data.at(gridIndex) = 0;
+                        }
+                        break;
+                    default: " LOL WHUT I HAVE NO AXIS ";
+                }
+                
                
                 //if empty or solid
                 if ((*marker)(i, j, k) <= 0) {
                     
-                    float totalVel = 0;
-                    
-                    int gridIndex = ijkToGridIndex(glm::vec3(i, j, k));
+       
                     std::vector<glm::ivec3> neighbors = getTrilinNeighbors(glm::ivec3(i, j, k));
                     int numNeighbors = 0;
                     
@@ -670,7 +684,6 @@ void Grid<T>::extrapolateVelocities(Grid<int>* marker) {
                         //if neighbor was fluid, get its vel and add to neighbcount
                         if ((*marker)(neighbor.x, neighbor.y, neighbor.z) >=0) {
                             totalVel+= oldData.at(ijkToGridIndex(neighbor));
-                            //std::cout << "    new total vel " << totalVel << "from " << ijkToGridIndex(neighbor) << std::endl;
                             numNeighbors++;
                         }
                     }
@@ -678,10 +691,18 @@ void Grid<T>::extrapolateVelocities(Grid<int>* marker) {
                     if (numNeighbors > 0) {
                         data.at(gridIndex) = totalVel/(float)numNeighbors;
                     }
+                    
+                    else {
+                        data.at(gridIndex) = 0;
+                    }
                 }
             }
         }
     }
+        
+        
+    
+ 
 }
 
 
@@ -702,6 +723,15 @@ void Grid<T>::resetToZero() {
 template<typename T>
 void Grid<T>::printContents(std::string message) {
     
+    gridFile.open(message + ".txt", std::ofstream::app);
+    
+    if (gridFile.is_open())
+    {
+        gridFile<< message << "\n";
+    }
+    
+    
+    
     std::cout << message << std::endl;
     std::cout << dimX << " x " << dimY << " x " << dimZ << std::endl;
     
@@ -709,15 +739,28 @@ void Grid<T>::printContents(std::string message) {
     for (int i = 0; i < data.size(); i++) {
         if (i > 0 && i % dimX == 0) {
             std::cout << std::endl;
+            if (gridFile.is_open()) { gridFile<< "\n"; }
         }
         
         if (i % (dimY * dimX) == 0) {
             std::cout << std::endl;
+            if (gridFile.is_open()) { gridFile<< "\n"; }
         }
+        
+        if (gridFile.is_open())
+        {
+            gridFile<< i << ": " << std::setprecision(3) << data.at(i) << "  ";
+        }
+        
+        
         std::cout << i << ": " << std::setprecision(3) << data.at(i) << "  ";
     }
     
+    
+    
     std::cout << std::endl << "--- eog ---" << std::endl;
+    
+    gridFile.close();
 }
 
 template<typename T>
