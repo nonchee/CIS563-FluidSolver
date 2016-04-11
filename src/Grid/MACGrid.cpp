@@ -34,8 +34,8 @@ void MACGrid::markSolidBoundaries() {
         for (int j = 0; j < dimY; j++) {
             for (int k = 0; k < dimZ; k++) {
                 if (i == dimX - 1 || i == 0 || j == 0 || j == dimY -1 || k == 0 || k == dimZ - 1) {
-                    //int id = getGridIndex(i, j, k);
-                    int id = i + j * dimX + k * dimX * dimY;
+
+                    int id = gridMarker->ijkToGridIndex(glm::ivec3(i, j, k)); //i + j * dimX + k * dimX * dimY;
                     gridMarker->setValueAt(-1, id);
                 }
             }

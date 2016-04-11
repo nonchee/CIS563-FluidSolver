@@ -587,14 +587,6 @@ void Grid<T>::setValueAt(float value, int i, int j, int k) {
     }
 }
 
-template<typename T>
-void Grid<T>::pressureUpdate(int index, float scale) {
-    //int index = getGridIndexFromIJK(glm::vec3(i, j, k));
-   // int forwardNeighborIndex = index;
-    //int backwardNeighborIndex = index; // - axisValue;
-    //float changeInPressure = data[forwardNeighborIndex] - data[backwardNeighborIndex];
-    data[index] = data[index] - scale;
-}
 
 template<typename T>
 void Grid<T>::pressureUpdate(Grid<float>* gridP) {
