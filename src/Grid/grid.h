@@ -11,10 +11,6 @@
 template<typename T>
 class Grid {
     
-    static const GLfloat* grid_vertex_buffer_data_array;
-    std::ofstream gridFile;
-
-    
 public:
     //dimensions
     int dimX ;
@@ -45,6 +41,7 @@ public:
     int ijkToIndex(glm::vec3 IJK);
     int ijkToIndex(glm::ivec3 IJK);
     glm::ivec3 posToIJK(glm::vec3 pos);
+    glm::ivec3 posToStaggeredIJK(glm::vec3 pos);
 
 
     //getting splat
@@ -53,7 +50,6 @@ public:
     void addWeightAt(float weight, int i, int j, int k);
     
    
-    //float getInterpedVelocity(glm::vec3 ppos, glm::vec3 poffset);
     float getInterpedVelocity(glm::vec3 ppos, glm::vec3 poffset, std::vector<float>deltas);
     void ApplyBoundaryConditions();
     
@@ -68,7 +64,6 @@ public:
     void setValueAt(float value, int gridIndex);
     void setValueAt(float value, int i, int j, int k);
 
-    //float getDivergence(int i, int j, int k);
     
     //pressure solving
     void pressureUpdate(int index, float scale);
@@ -80,6 +75,8 @@ public:
     bool inGridBounds(glm::ivec3 perhaps);
     
     float getDiv(int i, int j, int k);
+    
+    void UpdateGridByPressure(); 
     
     //debugging
     void printContents(std::string message);

@@ -80,17 +80,17 @@ void FluidSolver::setParticleBounds(float x, float y, float z, float psep) {
 int FluidSolver::FindUnusedParticle(){
     
     for(int i=LastUsedParticle; i<MaxParticles; i++){
-        if (ParticlesContainer[i].life < 0){
+        /*if (ParticlesContainer[i].life < 0){
             LastUsedParticle = i;
             return i;
-        }
+        }*/
     }
     
     for(int i=0; i<LastUsedParticle; i++){
-        if (ParticlesContainer[i].life < 0){
+       /* if (ParticlesContainer[i].life < 0){
             LastUsedParticle = i;
             return i;
-        }
+        }*/
     }
     
     return 0; // All particles are taken, override the first one
@@ -210,7 +210,7 @@ void FluidSolver::spawnParticles() {
                 particle.b = 255;
                 particle.a = 255;
                 
-                particle.life = -1.0f;
+                //particle.life = -1.0f;
                 particle.cameradistance= -1.0f;
                 particle.size = 0.1; //(rand()%1000)/2000.0f + 0.1f;
                 

@@ -15,13 +15,11 @@
 
 
 
-#define DELTA_TIME 0.001f
-#define PSEP 0.25f
+#define DELTA_TIME 0.03f
+#define PSEP 0.5f
 #define PARTICLES_PER_CELL 1.f/PSEP //technically for each dimension lol
 #define DX 1.f
-
-
-#define GRAVITY -9.8f
+#define GRAVITY -10.f
 
 
 class MACGrid;
@@ -54,11 +52,12 @@ public:
     
     void AddExternalForcesToGrids();
     
-    void ApplyBoundaryConditions(); 
+    void ApplyBoundaryConditions();
     
-    void StoreGridToParticles(std::vector<float> deltaU,
-                          std::vector<float> deltaV,
-                          std::vector<float> deltaW);
+    void ExtrapolateVelocities();
+
+    
+    void StoreGridToParticles();
     
     void UpdateParticlePositions();
     
@@ -74,8 +73,7 @@ public:
     
     void buildA(Eigen::SparseMatrix<float>& A);
     void buildb(Eigen::VectorXf& b);
-    void ComputePressures();
-    void AdjustForPressure(Eigen::SparseMatrix<float> &A,Eigen::VectorXf &p);
+    void PressureUpdate();
     
     void printParticles(std::string message);
 };

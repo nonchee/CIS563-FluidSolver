@@ -26,7 +26,6 @@ public:
     int dimX ;
     int dimY ;
     int dimZ ;
-    float cellSidelength;
 
     
     float bbX;
@@ -46,8 +45,6 @@ public:
     
     
     int numFluidCells;
-    bool isFluid(int i, int j, int k);
-    
     int posToIndex(glm::vec3 position);
     int posToIndex(float i , float j, float k);
     glm::ivec3 posToIJK(glm::vec3 position);
@@ -77,7 +74,11 @@ public:
     
     void extrapolateVelocities();
     void printMarker(std::string caption);
-    void printDimensions(); 
+    void printDimensions();
+    
+    bool isSolid(glm::ivec3 cellIJK);
+    bool isFluidOrAir(glm::ivec3 cellIJK); 
+    
     
 };
 

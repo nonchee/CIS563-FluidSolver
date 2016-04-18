@@ -10,7 +10,7 @@ extern GLFWwindow* window; // The "extern" keyword here is to access the variabl
 #include "camera.hpp"
 
 // Initial position : on +Z
-glm::vec3 position = glm::vec3( 0, 0, 3);
+glm::vec3 position = glm::vec3( 0, 0, 22);
 // Initial horizontal angle : toward -Z
 float horizontalAngle = 3.14f;
 // Initial vertical angle : none

@@ -112,7 +112,7 @@ void MACGrid::resetGrids() {
     gridU->resetToZero();
     gridV->resetToZero();
     gridW->resetToZero();
-    
+    gridP->resetToZero(); 
 
     
 
@@ -120,6 +120,10 @@ void MACGrid::resetGrids() {
 
 
 void MACGrid::addExternalForcesToGrids(glm::vec3 forces) {
+    
+    std::vector<float> deltaU; //(mGrid->gridU->data);
+    std::vector<float> deltaV;//(mGrid->gridV->data);
+    std::vector<float> deltaW;//(mGrid->gridW->data);
     
     deltaU = gridU->data;
     deltaV = gridV->data;
@@ -158,8 +162,6 @@ void MACGrid::addExternalForcesToGrids(glm::vec3 forces) {
     }
 
 
-    
-    
     ///calculate delta velocity
     for (int i = 0; i < gridV->data.size(); i++) {
         deltaU[i] = gridU->data[i] - deltaV[i];
@@ -175,18 +177,87 @@ void MACGrid::addExternalForcesToGrids(glm::vec3 forces) {
 }
 
 
-
-bool MACGrid::isFluid(int i, int j, int k) {
-    
-    //(*gridMarker)(i, j, k)
-    return (*gridMarker)(i, j, k) > 0;
-}
-
-
 void MACGrid::extrapolateVelocities() {
+  
+    
+    
+    //fuids and near_fluids == FLUID
+    // PER GRID
+    // if me or behind was fluid in original, then i am fluid
+    // otherwise i am air (even if solid was original)
+    
+    // iterate through TEMPORARY GRID OF JUST AIR AND FLUIDS
+    // if current temp cell is NOT FLUID,
+    // check each of 6 neighbors, take each fluid neighbor and add its velocity
+    // divide by total number of fluid cells;
+    
+    
+    /*std::vector<int> pseudoMarkers;
+     
+     std::vector<T> oldData(data);
+     
+     for (int i = 0; i < dimX; i++) {
+     for (int j = 0; j < dimY; j++) {
+     for (int k = 0; k < dimZ; k++) {
+     
+     float totalVel = 0;
+     
+     int gridIndex = ijkToIndex(glm::vec3(i, j, k));
+     
+     switch (axis) {
+     case 0:
+     if (i == 0 || i == dimX - 1) {
+     data.at(gridIndex) = 0;
+     }
+     break;
+     case 1: //std::cout << " I AM A V GRID " << std::endl;
+     if (j == 0 || j == dimY - 1) {
+     data.at(gridIndex) = 0;
+     }
+     break;
+     case 2: //std::cout << " I AM A W GRID " << std::endl;
+     if (k == 0 || k == dimZ - 1) {
+     data.at(gridIndex) = 0;
+     }
+     break;
+     default: " LOL WHUT I HAVE NO AXIS ";
+     }
+     
+     
+     //if empty or solid
+     if ((*marker)(i, j, k) <= 0) {
+     
+     
+     //std::vector<glm::ivec3> neighbors = getTrilinNeighbors(glm::ivec3(i, j, k));
+     int numNeighbors = 0;
+     
+     for (glm::ivec3 neighbor : neighbors) {
+     //printVector((glm::vec3)neighbor, "  was neighbor");
+     //if neighbor was fluid, get its vel and add to neighbcount
+     if ((*marker)(neighbor.x, neighbor.y, neighbor.z) >=0) {
+     totalVel+= oldData.at(ijkToIndex(neighbor));
+     numNeighbors++;
+     }
+     }
+     //can't just use neighbrs.size() because trilin is quite general
+     if (numNeighbors > 0) {
+     data.at(gridIndex) = totalVel/(float)numNeighbors;
+     }
+     
+     else {
+     data.at(gridIndex) = 0;
+     }
+     }
+     }
+     }
+     }
+     
+     */
+    
+    
     gridU->extrapolateVelocities(gridMarker);
     gridV->extrapolateVelocities(gridMarker);
-    gridW->extrapolateVelocities(gridMarker); 
+    gridW->extrapolateVelocities(gridMarker);
 }
 
 
@@ -198,7 +269,7 @@ glm::vec3 MACGrid::interpolateFromGrid(glm::vec3 pos,
                                        std::vector<float> deltaU,
                                        std::vector<float> deltaV,
                                        std::vector<float> deltaW) const {
-        
+    
     glm::vec3 boxOrig = glm::vec3(-bbX, -bbY, -bbZ);
     
     glm::vec3 poffset = boxOrig + glm::vec3(0, 0.5, 0.5);
@@ -227,8 +298,7 @@ glm::vec3 MACGrid::interpolateFromGrid(glm::vec3 pos,
 
 void MACGrid::UpdatePressureGrid(Eigen::SparseMatrix<float> &A, Eigen::VectorXf &p) {
     
-       float scale = DELTA_TIME/(DX * DX);
-    
+    float scale = DELTA_TIME/(DX * DX);
     
     for (int k=0; k<A.outerSize(); ++k) {
         
@@ -243,13 +313,19 @@ void MACGrid::UpdatePressureGrid(Eigen::SparseMatrix<float> &A, Eigen::VectorXf 
         }
     }
     
-    printMarker("these have fluids");
+    //printMarker("these have fluids");
     
     //gridP->printContents("GRID P PRESSURE UPDATED");
 }
 
 
+bool MACGrid::isSolid(glm::ivec3 cellIJK) {
+    return (*gridMarker)(cellIJK.x, cellIJK.y, cellIJK.z) < 0;
+}
 
+bool MACGrid::isFluidOrAir(glm::ivec3 cellIJK) {
+    return (*gridMarker)(cellIJK.x, cellIJK.y, cellIJK.z) >= 0;
+}
 
 
 void MACGrid::UpdateVelocityGridsByPressure() {
@@ -259,76 +335,107 @@ void MACGrid::UpdateVelocityGridsByPressure() {
     float scale = DELTA_TIME/DX;
     
     //ONLY DO THIS IF THERE IS AT LEAST ONE FLUID OUT OF BEFORE/BEHIND
-    for (int i = 0; i < dimX; i++) {
-        for (int j = 0; j < dimY; j++) {
-            for (int k = 0; k < dimZ; k++) {
+    for (int i = 0; i < gridP->dimX ; i++) {
+        for (int j = 0; j < gridP->dimY ; j++) {
+            for (int k = 0; k < gridP->dimZ ; k++) {
                 
-                int id;
-                int id2;
-                float pressureChange;
+                float pressureChange = 0;
                 
-                //get P
-                glm::vec3 cur(i, j, k);
-                
-                //std::cout << " u: previously this " << (*gridU)(i, j, k) << std::endl;
-                
-                glm::vec3 neighbU = cur - (glm::vec3) gridU->gridDir;
-               /* if(isFluid(neighbU) ||  isFLUID(cur)) {
-                    if (isSolid(neighbU) || isSOLID(cur)) {
-                        velocity is just zero LOL
-                    }
+                glm::ivec3 curU(i, j, k);
+                glm::ivec3 neighbU = curU - gridU->gridDir; //get prev
+    
+                if (isFluidOrAir(curU) || isFluidOrAir(neighbU)) {
+                    
+                    if (isSolid(curU) || isSolid(neighbU)) {
+                        gridU->setValueAt(0, curU.x, curU.y, curU.z);
+                    } //set solid
+                    
                     else {
-                        currentcell velocity -= pressurechange * scale;
+                        
+                        pressureChange = (*gridP)(curU) - (*gridP)(neighbU);
+                        gridU->addValueAt(-scale * pressureChange, i, j, k);
+                        
+                        //if out of bounds
+                        /*if (i >= gridP->dimX) {
+                            pressureChange = 0.f - (*gridP)(neighbU);
+                            gridU->addValueAt(-scale * pressureChange, i, j, k);
+                        }
+                        
+                        else {
+                         
+                        }*/
+                        
                     }
-                    
-                    //DEBUGGING
-                    //if calculating divergence after updating for velocity
-                    //RECALATE DIVERGENCE AND CHECK IF THEY'RE ALL ZERO
-                    //possible bug cuases -- marking cells incorrectly or a matrix-building
-                    //lol @ pressure ste[[a[sdpfkalsdfkaslfdj
-                    
-                }*/
+                }
                 
-                
-                id = gridP->ijkToIndex(cur);
-                id2 = gridP->ijkToIndex(neighbU);
-                pressureChange = (*gridP)((glm::ivec3) cur) - (*gridP)((glm::ivec3) neighbU);
-                gridU->addValueAt(-scale * pressureChange, i, j, k);
+                        //check if either is solid
 
-                //get P - 1
-                //std::cout << " v: previously this: does this change " << (*gridV)(i, j, k) << std::endl;
-                glm::vec3 neighbV = cur - (glm::vec3) gridV->gridDir;
-                id = gridP->ijkToIndex(cur);
-                id2 = gridP->ijkToIndex(neighbV);
-                pressureChange = (*gridP)((glm::ivec3) cur) - (*gridP)((glm::ivec3) neighbV);
-                gridV->addValueAt(-scale * pressureChange, i, j, k);
-                //std::cout << " v: does this change " << (*gridV)(i, j, k) << std::endl;
-                
-               
-                /*if ((*gridW)(i, j, k) > 0 ) {
-                    std::cout << " w: previously this " << (*gridW)(i, j, k) << std::endl;
-                }*/
-         
-                glm::vec3 neighbW = cur - (glm::vec3) gridW->gridDir;
-                id = gridP->ijkToIndex(cur);
-                id2 = gridP->ijkToIndex(neighbW);
-                pressureChange = (*gridP)((glm::ivec3) cur) - (*gridP)((glm::ivec3) neighbW);
-                gridW->addValueAt(-scale * pressureChange, i, j, k); //)
-                
-                /*if ((*gridW)(i, j, k) > 0 ) {
-                    std::cout << "w: does this change "<< (*gridW)(i, j, k) << std::endl;
-                }*/
-                //std::cout << "  << (*gridW)(i, j, k) << std::endl;
                 
             }
         }
     }
-   
-   /* gridU->printContents("YOLO U");
-    gridV->printContents("YOLO V");
-    gridW->printContents("YOLO W");
-    */
+    
+    for (int i = 0; i < gridP->dimX; i++) {
+        for (int j = 0; j < gridP->dimY; j++) {
+            for (int k = 0; k < gridP->dimZ; k++) {
 
+                float pressureChange = 0;
+                
+                glm::ivec3 curV(i, j, k);
+                glm::ivec3 neighbV = curV - gridV->gridDir; //get prev
+                
+                if (isFluidOrAir(curV) || isFluidOrAir(neighbV)) {
+                    
+                    if (isSolid(curV) || isSolid(neighbV)) {
+                        gridU->setValueAt(0, curV.x, curV.y, curV.z);
+                    } //set solid
+                    
+                    else {
+                        
+                        pressureChange = (*gridP)(curV) - (*gridP)(neighbV);
+                        gridV->addValueAt(-scale * pressureChange, i, j, k);
+                        
+                        //if out of bounds
+                        /*if (i >= gridP->dimX) {
+                         pressureChange = 0.f - (*gridP)(neighbU);
+                         gridU->addValueAt(-scale * pressureChange, i, j, k);
+                         }
+                         
+                         else {
+                         
+                         }*/
+                        
+                    }
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < gridP->dimX ; i++) {
+        for (int j = 0; j < gridP->dimY ; j++) {
+            for (int k = 0; k < gridP->dimZ ; k++) {
+                
+                float pressureChange = 0;
+                
+                glm::ivec3 curW(i, j, k);
+                glm::ivec3 neighbW = curW - gridW->gridDir; //get prev
+                
+                if (isFluidOrAir(curW) || isFluidOrAir(neighbW)) {
+                    
+                    if (isSolid(curW) || isSolid(neighbW)) {
+                        gridU->setValueAt(0, curW.x, curW.y, curW.z);
+                    } //set solid
+                    
+                    else {
+                        
+                        pressureChange = (*gridP)(curW) - (*gridP)(neighbW);
+                        gridW->addValueAt(-scale * pressureChange, i, j, k);
+                        
+                    }
+                }
+            }
+        }
+    }
 }
 
 
@@ -367,8 +474,7 @@ void MACGrid::printDimensions() {
     std::cout << "grid dimensions " << dimX << " x " << dimY << "  " << dimZ <<std::endl;
     std::cout << "grid size " << (dimX * dimY * dimZ) << std::endl;
     std::cout << "box bounds: " << bbX << " " << bbY << " " << bbZ << std::endl;
-    std::cout << " cell side: " << cellSidelength << std::endl;
-    std::cout << " particle sep " << cellSidelength/2 << std::endl;
+
     
     
     std::cout << "-------" << std::endl;

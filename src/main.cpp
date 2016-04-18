@@ -38,7 +38,7 @@ FlipSolver* flipsolver;
 void setSceneParameters() {
     std::vector<float> jsonFloats = loadJSON("../src/scene/scene.json");
 
-    int boxSize = 3;
+    int boxSize = 4;
    
     boxScaleX = boxSize; //jsonFloats.at(0);
     boxScaleY = boxSize; //jsonFloats.at(1);
@@ -167,6 +167,10 @@ int main( void )
     double lastTime = glfwGetTime();
     do
     {
+        
+        flipsolver->FlipUpdate();
+        
+        
         // Clear the screen
         glClearColor(0.9, 0.5, 0.8, 0.2);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -183,7 +187,7 @@ int main( void )
         glm::mat4 ViewProjectionMatrix = ProjectionMatrix * ViewMatrix;
     
         //////update grid from particles, then particles from grid
-        flipsolver->FlipUpdate();
+       
         flipsolver->update(DELTA_TIME, boxScaleX, boxScaleY, boxScaleZ, CameraPosition);
         
         //////update where the particles should draw on the page
