@@ -11,15 +11,10 @@
 //std::vector<float> boxBounds;
 
 class Geom {
-    
-
-    
-
-public:
     float boxBoundX;
     float boxBoundY;
     float boxBoundZ;
-    
+public:    
     Geom(float bbX, float bbY, float bbZ); 
     std::vector<float> geomVertices;
     

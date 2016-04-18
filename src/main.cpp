@@ -35,52 +35,38 @@ Geom* containerGeom;
 FlipSolver* flipsolver;
 
 
-
 void setSceneParameters() {
     std::vector<float> jsonFloats = loadJSON("../src/scene/scene.json");
 
-    bool smallBox = 3;
-    if (smallBox == 0) {
-        boxScaleX = 1.5; //jsonFloats.at(0);
-        boxScaleY = 1.5; //jsonFloats.at(1);
-        boxScaleZ = 1.5; //jsonFloats.at(2);
+    int boxSize = 3;
+   
+    boxScaleX = boxSize; //jsonFloats.at(0);
+    boxScaleY = boxSize; //jsonFloats.at(1);
+    boxScaleZ = boxSize; //jsonFloats.at(2);
         
-    }//set bounds of box
 
-    else if (smallBox == 1){
-        boxScaleX = 2; //jsonFloats.at(0);
-        boxScaleY = 2; //jsonFloats.at(1);
-        boxScaleZ = 2; //jsonFloats.at(2);
-    }
     
-    else if (smallBox == 3){
-        boxScaleX = 3; //jsonFloats.at(0);
-        boxScaleY = 3; //jsonFloats.at(1);
-        boxScaleZ = 3; //jsonFloats.at(2);
-    }
+    std::cout << "box scale " << glm::to_string(glm::vec3(boxScaleX, boxScaleY , boxScaleZ)) << std::endl;
     boxScale = glm::scale(glm::mat4(1.0f), glm::vec3(boxScaleX, boxScaleY , boxScaleZ));
-    
-
     containerGeom = new Geom(boxScaleX, boxScaleY, boxScaleZ);
-    flipsolver = new FlipSolver(containerGeom);
+    flipsolver = new FlipSolver(boxScaleX, boxScaleY , boxScaleZ);
     
-    float pboundX = 2; //jsonFloats.at(3);
-    float pboundY = 2; //jsonFloats.at(4);
-    float pboundZ = 2; //jsonFloats.at(5);
-    float psep = 0.4; //jsonFloats.at(6);
+    float pboundX = boxScaleX -1; //jsonFloats.at(3);
+    float pboundY = boxScaleY -1; //jsonFloats.at(4);
+    float pboundZ = boxScaleZ -1; //jsonFloats.at(5)
     
     //set  bounds of particles
-    flipsolver->setParticleBounds(pboundX, pboundY, pboundZ, psep);
+    //flipsolver->setParticleBounds(pboundX, pboundY, pboundZ);
     
 }
 
 void checkKeysPressed() {
     if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
-        flipsolver->enableGravity();
+       // flipsolver->enableGravity();
     }
     if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS &&
         glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        flipsolver->disableGravity();
+        //flipsolver->disableGravity();
     }
     if (glfwGetKey(window, GLFW_KEY_E ) == GLFW_PRESS &&
         glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
@@ -122,14 +108,6 @@ int main( void )
     
     // box vertex data
     static const GLfloat g_box_vertex_buffer_data[] = {
-        /*-1.0f,-0.0f,-1.0f, //bottom face
-        -1.0f,-0.0f, 1.0f,
-        -1.0f,-0.0f, 1.0f,
-        1.0f, -0.0f, 1.0f,
-        1.0f, -0.0f, 1.0f,
-        1.0f, -0.0f,-1.0f,
-        1.0f, -0.0f,-1.0f,
-        -1.0f,-0.0f,-1.0f,*/
         -1.0f,-1.0f,-1.0f, //bottom face
         -1.0f,-1.0f, 1.0f,
         -1.0f,-1.0f, 1.0f,
@@ -190,12 +168,13 @@ int main( void )
     do
     {
         // Clear the screen
-        glClearColor(1, 0.9, 0.8, 0.8);
+        glClearColor(0.9, 0.5, 0.8, 0.2);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
+       
+        
         double currentTime = glfwGetTime();
-        double delta = currentTime - lastTime;
-        lastTime = currentTime;
+        //double delta = 1; //currentTime - lastTime;
 
         camera->computeMatricesFromInputs();
         glm::mat4 ProjectionMatrix = camera->getProjectionMatrix();
@@ -204,7 +183,8 @@ int main( void )
         glm::mat4 ViewProjectionMatrix = ProjectionMatrix * ViewMatrix;
     
         //////update grid from particles, then particles from grid
-        flipsolver->FlipUpdate(delta, boxScaleX, boxScaleY, boxScaleZ, CameraPosition);
+        flipsolver->FlipUpdate();
+        flipsolver->update(DELTA_TIME, boxScaleX, boxScaleY, boxScaleZ, CameraPosition);
         
         //////update where the particles should draw on the page
         flipsolver->updateParticleBuffers();

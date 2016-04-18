@@ -1,85 +1,84 @@
-/*Define a class Grid
- The easiest way to verify correct indices for a grid is drawing a simple 2x2 grid on paper as we did in class
- Operator() (int i, int j, int k) is an elegant way to translate i,j,k to the correct index in the 1D std::vector. Remember grids U, V & P grids have different dimensions.
- If grid has vec3 dimension; observe that index in the 1D std::vector for (i,j,k) = k*dimension.x*dimension.y + j*dimension.x + i
- class MACGrid can simply be an encapsulation (composition) of the 4 staggered grids we need - gridU, gridV, gridW & gridP
- 
- 
- Define a derived class FlipSolver from base class FluidSolver
- */
-
+#ifndef FLIPSOLVER_H
+#define FLIPSOLVER_H
 
 #include <vector>
-#include <map>
-
 #include <glm/glm.hpp>
 
-#include "FluidSolver.hpp"
-#include "../grid/Grid.h"
-#include "../grid/MACGrid.h"
-#include "../geom/geom.hpp"
 #include <Eigen/Sparse>
 #include <Eigen/IterativeLinearSolvers>
+#include <Eigen/Core>
 #include <vector>
 
+#include "FluidSolver.hpp"
+#include "../grid/MACGrid.h"
+#include "../geom/geom.hpp"
+
+
+
+#define DELTA_TIME 0.001f
+#define PSEP 0.25f
+#define PARTICLES_PER_CELL 1.f/PSEP //technically for each dimension lol
+#define DX 1.f
+
+
+#define GRAVITY -9.8f
+
+
+class MACGrid;
 //typedef Eigen::Triplet<double> T;
 
 class FlipSolver : public FluidSolver {
     
-    Geom* container;
-    bool gravityEnabled = true;
-    bool withinFluidBounds(float i, float j, float k);
-    
-    float bbX;
-    float bbY;
-    float bbZ;
-    
-    
-    int mx; // = mGrid->dimX;
-    int my; // = mGrid->dimY;
-    int mz;// = mGrid->dimZ;
-
-public:
-    FlipSolver(Geom* g);
-    
-    std::map<int, std::vector<Particle>> particlesByIndex;
+    float bbX; float bbY; float bbZ;
     
     MACGrid* mGrid;
+    int mx; int my; int mz;
 
-    void FlipUpdate(float delta, float boxScaleX, float boxScaleY, float boxScaleZ, glm::vec3 CameraPosition);
 
-    
+public:
+    FlipSolver(float boxScaleX, float boxScaleY , float boxScaleZ);
+
     void Init(); // : Initialize the grid and particle positions and velocities.
     void InitializeParticles();
     void ConstructMACGrid(); //Create the MAC grid
     
-    void StoreParticleVelocitiesToGrid();
+    void FlipUpdate();
+  
     
-    glm::vec3 InterpolateVelocity(const glm::vec3& pos, const MACGrid& mGrid);
+    void SetGridsToZero();
+    void MarkSolidBoundaries();
     
-    void MACGrid2Particle(float delta, std::vector<float> deltaU, std::vector<float> deltaV, std::vector<float> deltaW);
+    void ResetWeightCounts(); 
+    void MarkFluidCells();
+    void StoreParticlesToGrid();
     
+    void AddExternalForcesToGrids();
     
-    void updateGravity();
-    void enableGravity();
-    void disableGravity();
+    void ApplyBoundaryConditions(); 
     
- 
+    void StoreGridToParticles(std::vector<float> deltaU,
+                          std::vector<float> deltaV,
+                          std::vector<float> deltaW);
+    
+    void UpdateParticlePositions();
+    
+
     bool isSolid(int i, int j, int k);
     bool isFluid(int i , int j , int k);
     bool outOfBounds(int i, int j, int k);
     
-    int insertCoeff(int id, int i, int j, int k,
+    float insertCoeff(int id, int i, int j, int k,
                 std::vector<Eigen::Triplet<float>>& coeffs);
-    int countFluidCells();
-    
-    void buildA(Eigen::SparseMatrix<float>& A, std::vector<Eigen::Triplet<float> >& coeffs);
-    void buildb(Eigen::VectorXf& b);
-    void PressureSolve(float dt);
-    void PressureUpdate(Eigen::SparseMatrix<float> &A,Eigen::VectorXf &p, float dt);
 
+    bool withinFluidBounds(float i, float j, float k);
     
+    void buildA(Eigen::SparseMatrix<float>& A);
+    void buildb(Eigen::VectorXf& b);
+    void ComputePressures();
+    void AdjustForPressure(Eigen::SparseMatrix<float> &A,Eigen::VectorXf &p);
+    
+    void printParticles(std::string message);
 };
 
 
-
+#endif

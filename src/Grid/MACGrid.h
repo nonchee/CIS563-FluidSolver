@@ -1,21 +1,25 @@
-#pragma once
+#ifndef MACGRID_H
+#define MACGRID_H
+
+#include "../solvers/FlipSolver.h"
+#include "../solvers/Particle.hpp"
 #include "Grid.h"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/norm.hpp>
 #include "glm/gtx/string_cast.hpp"
 
-#include "../solvers/Particle.hpp"
-#include <map>
 #include <vector>
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/Sparse>
 #include <Eigen/Core>
 
+
 class MACGrid {
     
 public:
-    MACGrid(float fluidBoundX, float fluidBoundY, float fluidBoundZ, float gridCellSidelengths);
+    MACGrid(float bbX, float bbY, float bbZ);
     
     int particleCount; 
     
@@ -23,7 +27,7 @@ public:
     int dimY ;
     int dimZ ;
     float cellSidelength;
-    float W; //avg number of particles per grid, for kernel function
+
     
     float bbX;
     float bbY;
@@ -34,24 +38,31 @@ public:
     Grid<float>* gridW;    //w
     Grid<float>* gridP;    //pressure
     Grid<int>* gridMarker; //markerGrid<float> gridDiv"
+    
+    ///save old grids
+    std::vector<float> deltaU; //(mGrid->gridU->data);
+    std::vector<float> deltaV; //(mGrid->gridV->data);
+    std::vector<float> deltaW;
+    
+    
     int numFluidCells;
-    void setNumFluidCells(int num);
-    
-    int getGridIndex(glm::vec3 position);
-    int getGridIndex(int i , int j, int k);
-    glm::ivec3 getGridIJK(glm::vec3 position);
-    
     bool isFluid(int i, int j, int k);
     
+    int posToIndex(glm::vec3 position);
+    int posToIndex(float i , float j, float k);
+    glm::ivec3 posToIJK(glm::vec3 position);
+    int ijkToIndex(glm::ivec3 ijk);
+    int ijkToIndex(int i, int j, int k);
+ 
+    
+
+    
     void resetGrids();
-    void markSolidBoundaries();
+    void storeParticleToMarker(Particle p);
     
-    void addExternalForcesToGrids(glm::vec3 force, float delta);
-    void storeParPosToMarker(Particle p); 
     
-    //particle to grid
-    void storeParVelToGrids(Particle p);
-    
+    void addExternalForcesToGrids(glm::vec3 force);
+
     void collisionResponse(glm::vec3 pos);
     
     //grid to particle
@@ -60,13 +71,14 @@ public:
                                   std::vector<float> deltaV,
                                   std::vector<float> deltaW) const;
 
-    void calculateAvgNumberOfParticlesPerGrid();
     
-    void UpdatePressureGrid(Eigen::SparseMatrix<float> &A, Eigen::VectorXf &p, float dt);
-    void UpdateVelocityGridsByPressure(float delta);
+    void UpdatePressureGrid(Eigen::SparseMatrix<float> &A, Eigen::VectorXf &p);
+    void UpdateVelocityGridsByPressure();
     
     void extrapolateVelocities();
     void printMarker(std::string caption);
     void printDimensions(); 
     
 };
+
+#endif

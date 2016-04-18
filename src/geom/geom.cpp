@@ -22,8 +22,7 @@ void Geom::drawBox(glm::mat4 MVP, GLuint boxprogramID, GLuint boxvertexbuffer, G
         // 1rst attribute buffer : vertices
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, boxvertexbuffer);
-        glVertexAttribPointer(
-                              0,                  // attribute. No particular reason for 0, but must match the layout in the shader.
+        glVertexAttribPointer(0,                  // attribute. No particular reason for 0, but must match the layout in the shader.
                               3,                  // size
                               GL_FLOAT,           // type
                               GL_FALSE,           // normalized?
@@ -34,8 +33,7 @@ void Geom::drawBox(glm::mat4 MVP, GLuint boxprogramID, GLuint boxvertexbuffer, G
         // 2nd attribute buffer : colors
         glEnableVertexAttribArray(1);
         glBindBuffer(GL_ARRAY_BUFFER, boxcolorbuffer);
-        glVertexAttribPointer(
-                              1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
+        glVertexAttribPointer(1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
                               3,                                // size
                               GL_FLOAT,                         // type
                               GL_FALSE,                         // normalized?
