@@ -80,8 +80,8 @@ void FlipSolver::InitializeParticles() {
     ParticlesContainer.push_back(p);
     mGrid->particleCount++;*/
     
-    float negativeBounds = -1;
-    float positiveBounds = 1;
+    float negativeBounds = -1.5;
+    float positiveBounds = 1.5;
     for (float i = negativeBounds; i < positiveBounds; i+= PSEP) {
         for (float j =  negativeBounds; j  < positiveBounds; j += PSEP) {
             for (float k = negativeBounds ; k   < positiveBounds ; k += PSEP) {
@@ -366,12 +366,13 @@ void FlipSolver::FlipUpdate(){
 #endif
     
     ApplyBoundaryConditions();
-#ifdef DEBUGAPPLY
+    
+#ifdef BOUNDARYDERP
     mGrid->gridV->printContents("boundary enforced on gridV");
-   
+    mGrid->printMarker("marked after boundaries");
 #endif
     
-     //mGrid->printMarker("marked after boundaries");
+    
     PressureUpdate();
     
     //FOUR
@@ -405,20 +406,18 @@ void FlipSolver::StoreGridToParticles() {
     
     for (Particle p : ParticlesContainer) {
         
-
         //GET TRILIN INTERP
         glm::vec3 poffset = glm::vec3(-bbX, -bbY, -bbZ);
         float picVelX = mGrid->gridU->getInterpedVelocity(p.pos, poffset, mGrid->gridU->data); //
         float picVelY = mGrid->gridV->getInterpedVelocity(p.pos, poffset, mGrid->gridV->data); //
         float picVelZ = mGrid->gridW->getInterpedVelocity(p.pos, poffset, mGrid->gridW->data); //
         
-
         //glm::vec3 flipVel(flipWeight * flipVelX, flipWeight * flipVelY, flipWeight * flipVelZ);
         
         p.speed = glm::vec3(picVelX, picVelY, picVelZ);
-        //std::cout << " p speed " << glm::to_string(p.speed) << std::endl;
 
-        updatedParticles.push_back(p); //InterpolateVelocity(p.pos, *mGrid);
+
+        updatedParticles.push_back(p);
     }
     
     ParticlesContainer = updatedParticles;
@@ -493,20 +492,19 @@ void FlipSolver::StoreParticlesToGrid(){
     }
     
     
-    //normalize
     for (int i = 0; i < mGrid->gridU->data.size(); i++) {
         if (mGrid->gridU->totalWeights[i] != 0) {
             mGrid->gridU->data[i] /= (float) mGrid->gridU->totalWeights[i];
         }
     }
-    //normalize
+
     for (int i = 0; i < mGrid->gridV->data.size(); i++) {
         if (mGrid->gridV->totalWeights[i] != 0) {
             mGrid->gridV->data[i] /= (float) mGrid->gridV->totalWeights[i];
         }
     }
 
-    //normalize
+
     for (int i = 0; i < mGrid->gridW->data.size(); i++) {
         if (mGrid->gridW->totalWeights[i] != 0) {
             mGrid->gridW->data[i] /= (float) mGrid->gridW->totalWeights[i];

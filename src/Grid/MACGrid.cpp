@@ -332,12 +332,12 @@ void MACGrid::UpdateVelocityGridsByPressure() {
     
     //subtract pressure value
     
-    float scale = DELTA_TIME/DX;
+    float scale = DELTA_TIME / (float) DX;
     
     //ONLY DO THIS IF THERE IS AT LEAST ONE FLUID OUT OF BEFORE/BEHIND
-    for (int i = 0; i < gridP->dimX ; i++) {
-        for (int j = 0; j < gridP->dimY ; j++) {
-            for (int k = 0; k < gridP->dimZ ; k++) {
+    for (int i = 0; i < dimX ; i++) {
+        for (int j = 0; j < dimY ; j++) {
+            for (int k = 0; k < dimZ ; k++) {
                 
                 float pressureChange = 0;
                 
@@ -355,39 +355,25 @@ void MACGrid::UpdateVelocityGridsByPressure() {
                         pressureChange = (*gridP)(curU) - (*gridP)(neighbU);
                         gridU->addValueAt(-scale * pressureChange, i, j, k);
                         
-                        //if out of bounds
-                        /*if (i >= gridP->dimX) {
-                            pressureChange = 0.f - (*gridP)(neighbU);
-                            gridU->addValueAt(-scale * pressureChange, i, j, k);
-                        }
-                        
-                        else {
-                         
-                        }*/
-                        
                     }
                 }
-                
-                        //check if either is solid
-
-                
             }
         }
     }
     
-    for (int i = 0; i < gridP->dimX; i++) {
-        for (int j = 0; j < gridP->dimY; j++) {
-            for (int k = 0; k < gridP->dimZ; k++) {
+    for (int i = 0; i < dimX; i++) {
+        for (int j = 0; j < dimY; j++) {
+            for (int k = 0; k < dimZ; k++) {
 
                 float pressureChange = 0;
                 
                 glm::ivec3 curV(i, j, k);
-                glm::ivec3 neighbV = curV - gridV->gridDir; //get prev
+                glm::ivec3 neighbV = curV - gridV->gridDir;
                 
                 if (isFluidOrAir(curV) || isFluidOrAir(neighbV)) {
                     
                     if (isSolid(curV) || isSolid(neighbV)) {
-                        gridU->setValueAt(0, curV.x, curV.y, curV.z);
+                        gridV->setValueAt(0, curV.x, curV.y, curV.z);
                     } //set solid
                     
                     else {
@@ -423,7 +409,7 @@ void MACGrid::UpdateVelocityGridsByPressure() {
                 if (isFluidOrAir(curW) || isFluidOrAir(neighbW)) {
                     
                     if (isSolid(curW) || isSolid(neighbW)) {
-                        gridU->setValueAt(0, curW.x, curW.y, curW.z);
+                        gridW->setValueAt(0, curW.x, curW.y, curW.z);
                     } //set solid
                     
                     else {
