@@ -162,13 +162,6 @@ void FlipSolver::ApplyBoundaryConditions() {
 
 void FlipSolver::ExtrapolateVelocities() {
     
-    //put velocity where fluids CAN GO
-    //so that interpolation will work next step!!!
-    //
-    
-    
-    //ugh this is not correct at all
-    //
     Grid<int>* tempMarker = new Grid<int>(mx, my, mz);
     
     for (int i = 0; i < mx; i++) {
@@ -378,12 +371,16 @@ void FlipSolver::FlipUpdate(){
     //FOUR
     ExtrapolateVelocities();
     
-    ApplyBoundaryConditions();
-    //mGrid->printMarker("these have fluids ");
-    //mGrid->gridV->printContents("gridV after extrapolation");
     
-    //FIVE
-    //mGrid->gridV->printContents("these shall be stored to the particles");
+#ifdef EXTRAPODERP
+    mGrid->printMarker("marked after boundaries");
+    mGrid->gridU->printContents("extrap  on gridV");
+    mGrid->gridV->printContents("extrap  on gridV");
+    mGrid->gridW->printContents("extrap  on gridV");
+#endif
+    
+    ApplyBoundaryConditions();
+
     StoreGridToParticles();
     
     UpdateParticlePositions();
@@ -449,9 +446,6 @@ void FlipSolver::UpdateParticlePositions() {
     
     ParticlesContainer = updatedParticles;
 }
-
-//NOTE if your particles are moving sluggily perhaps it is because
-//youa re dleta_timeing twiceover
 
 
 void FlipSolver::MarkFluidCells() {
@@ -571,9 +565,7 @@ void FlipSolver::PressureUpdate() {
     Eigen::VectorXf b(n);
     Eigen::SparseMatrix<float> A(n,n);
 
-    
-    //build the matrix of coefficients
-    //mGrid->printMarker("come on naow");
+
     A.setZero();
     buildA(A);
     
@@ -587,7 +579,7 @@ void FlipSolver::PressureUpdate() {
     p = cg.solve(b);
     
     
-//#define DEBUGPRESSURE
+//
 #ifdef DEBUGPRESSURE
     
     mGrid->gridP->printContents("gridP prepressure");
@@ -600,7 +592,7 @@ void FlipSolver::PressureUpdate() {
     mGrid->UpdatePressureGrid(A, p);
     mGrid->UpdateVelocityGridsByPressure();
     
-
+#define DEBUGPRESSURE
 #ifdef DEBUGPRESSURE
 
     
@@ -635,11 +627,11 @@ void FlipSolver::buildA(Eigen::SparseMatrix<float>& A) {
                     
                     coeff += insertCoeff(id, i-1, j, k, coeffs);
             
-                    coeff +=insertCoeff(id, i+1,j, k, coeffs);
+                    coeff +=insertCoeff(id, i+1, j, k, coeffs);
                     
-                    coeff += insertCoeff(id, i,j-1, k,coeffs);
+                    coeff += insertCoeff(id, i, j-1, k,coeffs);
 
-                    coeff += insertCoeff(id, i,j+1, k, coeffs);
+                    coeff += insertCoeff(id, i, j+1, k, coeffs);
                 
                     coeff += insertCoeff(id, i,j, k-1, coeffs);
                     
@@ -694,7 +686,7 @@ void FlipSolver::buildb(Eigen::VectorXf& b) {
 #define DEBUGB
 #ifdef DEBUGB
     
-    if (!(b.isZero(0))) {
+    if (!(b.isZero(3))) {
         std::cout << "\n nuuuuuuu B \n" << b << std::endl;
     }
         

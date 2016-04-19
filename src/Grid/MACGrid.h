@@ -51,7 +51,7 @@ public:
     int ijkToIndex(glm::ivec3 ijk);
     int ijkToIndex(int i, int j, int k);
  
-    
+
 
     
     void resetGrids();

@@ -296,26 +296,19 @@ glm::vec3 MACGrid::interpolateFromGrid(glm::vec3 pos,
 }
 
 
+
+
 void MACGrid::UpdatePressureGrid(Eigen::SparseMatrix<float> &A, Eigen::VectorXf &p) {
     
-    float scale = DELTA_TIME/(DX * DX);
+
     
-    for (int k=0; k<A.outerSize(); ++k) {
-        
-        // int prevPressure = 0;
-        for (Eigen::SparseMatrix<float>::InnerIterator it(A,k); it; ++it)
-        {
-            int count = it.value();
-            int id = it.index();
+    for (int id = 0; id < p.size(); id++) {
+        if (gridMarker->data[id] > 0) { //if is fluid
             float pressure = p[id];
             gridP->setValueAt(pressure, id);
-            
         }
     }
     
-    //printMarker("these have fluids");
-    
-    //gridP->printContents("GRID P PRESSURE UPDATED");
 }
 
 
@@ -338,9 +331,7 @@ void MACGrid::UpdateVelocityGridsByPressure() {
     for (int i = 0; i < dimX ; i++) {
         for (int j = 0; j < dimY ; j++) {
             for (int k = 0; k < dimZ ; k++) {
-                
-                float pressureChange = 0;
-                
+            
                 glm::ivec3 curU(i, j, k);
                 glm::ivec3 neighbU = curU - gridU->gridDir; //get prev
     
@@ -348,13 +339,10 @@ void MACGrid::UpdateVelocityGridsByPressure() {
                     
                     if (isSolid(curU) || isSolid(neighbU)) {
                         gridU->setValueAt(0, curU.x, curU.y, curU.z);
-                    } //set solid
-                    
+                    }
                     else {
-                        
-                        pressureChange = (*gridP)(curU) - (*gridP)(neighbU);
+                        float pressureChange = (*gridP)(curU) - (*gridP)(neighbU);
                         gridU->addValueAt(-scale * pressureChange, i, j, k);
-                        
                     }
                 }
             }
