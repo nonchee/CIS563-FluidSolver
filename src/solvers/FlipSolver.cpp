@@ -162,61 +162,63 @@ void FlipSolver::ApplyBoundaryConditions() {
 
 void FlipSolver::ExtrapolateVelocities() {
     
-    Grid<int>* tempMarker = new Grid<int>(mx, my, mz);
+    //extrapolate to gridU
+    Grid<int>* tempMarkerU = new Grid<int>(mx, my, mz);
     
     for (int i = 0; i < mx; i++) {
         for (int j = 0; j < my; j++) {
             for (int k = 0; k < mz; k++) {
-                if (isFluid(i, j, k) || isFluid(i, j - 1, k)) {
-                    tempMarker->setValueAt(FLUID, i, j, k);
+                if (isFluid(i, j, k) || isFluid(i-1, j, k)) {
+                    tempMarkerU->setValueAt(FLUID, i, j, k);
                 }
                 
                 else {
-                    tempMarker->setValueAt(AIR, i, j, k);
+                    tempMarkerU->setValueAt(AIR, i, j, k);
                 }
             }
         }
     }
-    
-#ifdef DEBUG
-    mGrid->printMarker("ACTUAL THINGS");
-    tempMarker->printContents("TEMP MARKERRR");
+
+#define DERP
+#ifdef DERP
+    mGrid->printMarker("ACTUAL MARKER");
+    tempMarkerU->printContents("TEMP MARKERRR");
 #endif
         
     //extrapolating onto gridVV
     
-    for (int i = 0; i < mGrid->gridU->dimX; i++) {
-        for (int j = 0; j < mGrid->gridU->dimY; j++) {
-            for (int k = 0; k < mGrid->gridU->dimZ; k++) {
+    for (int i = 0; i < mx; i++) {
+        for (int j = 0; j < my; j++) {
+            for (int k = 0; k < mz; k++) {
             
-                if ((*tempMarker)(i, j, k) != FLUID || outOfBounds(i, j, k)) {
+                if ((*tempMarkerU)(i, j, k) != FLUID) {
                     
                     int fluidNeighborCount = 0;
                     float totalNeighbVelocities;
                     
                         
-                    if ((*tempMarker)(i - 1 , j, k) == FLUID) {
+                    if ((*tempMarkerU)(i - 1 , j, k) == FLUID) {
                         totalNeighbVelocities+= (*mGrid->gridU)(i-1, j, k);
                         fluidNeighborCount++;
                     }
-                    if ((*tempMarker)(i + 1, j, k) == FLUID) {
+                    if ((*tempMarkerU)(i + 1, j, k) == FLUID) {// && !outOfBounds(i +1, j, k)) {
                         totalNeighbVelocities += (*mGrid->gridU)(i+1, j, k);
                          fluidNeighborCount++;
                         
                     }
-                    if ((*tempMarker)(i, j +1, k) == FLUID) {
+                    if ((*tempMarkerU)(i, j +1, k) == FLUID) { // && !outOfBounds(i, j+1, k)) {
                         totalNeighbVelocities += (*mGrid->gridU)(i, j+1, k);
                         fluidNeighborCount++;
                     }
-                    if ((*tempMarker)(i, j - 1, k) == FLUID) {
+                    if ((*tempMarkerU)(i, j - 1, k) == FLUID) {// && !outOfBounds(i, j-1, k)) {
                         totalNeighbVelocities += (*mGrid->gridU)(i, j-1, k);
                          fluidNeighborCount++;
                     }
-                    if ((*tempMarker)(i, j, k-1) == FLUID) {
+                    if ((*tempMarkerU)(i, j, k-1) == FLUID) { // && !outOfBounds(i, j-1, k)) {
                         totalNeighbVelocities += (*mGrid->gridU)(i, j, k-1);
                          fluidNeighborCount++;
                     }
-                    if ((*tempMarker)(i, j, k+1) == FLUID) {
+                    if ((*tempMarkerU)(i, j, k+1) == FLUID) {
                         totalNeighbVelocities += (*mGrid->gridU)(i, j, k+1);
                         fluidNeighborCount++;
                     }
@@ -233,38 +235,57 @@ void FlipSolver::ExtrapolateVelocities() {
     }
     
     
-    for (int i = 0; i < mGrid->gridV->dimX; i++) {
-        for (int j = 0; j < mGrid->gridV->dimY; j++) {
-            for (int k = 0; k < mGrid->gridV->dimZ; k++) {
+    Grid<int>* tempMarkerV = new Grid<int>(mx, my, mz);
+    tempMarkerV->resetToZero();
+    
+    for (int i = 0; i < mx; i++) {
+        for (int j = 0; j < my; j++) {
+            for (int k = 0; k < mz; k++) {
+                if (isFluid(i, j, k) || isFluid(i, j-1, k)) {
+                    tempMarkerV->setValueAt(FLUID, i, j, k);
+                }
                 
-                if ((*tempMarker)(i, j, k) != FLUID || outOfBounds(i, j, k)) {
+                else {
+                    tempMarkerV->setValueAt(AIR, i, j, k);
+                }
+            }
+        }
+    }
+
+    
+    
+    for (int i = 0; i < mx; i++) {
+        for (int j = 0; j < my; j++) {
+            for (int k = 0; k < mz; k++) {
+                
+                if ((*tempMarkerV)(i, j, k) != FLUID) {
                     
                     int fluidNeighborCount = 0;
                     float totalNeighbVelocities;
                     
                     
-                    if ((*tempMarker)(i - 1 , j, k) == FLUID) {
+                    if ((*tempMarkerV)(i - 1 , j, k) == FLUID) {
                         totalNeighbVelocities+= (*mGrid->gridV)(i-1, j, k);
                         fluidNeighborCount++;
                     }
-                    if ((*tempMarker)(i + 1, j, k) == FLUID) {
+                    if ((*tempMarkerV)(i + 1, j, k) == FLUID) {
                         totalNeighbVelocities += (*mGrid->gridV)(i+1, j, k);
                         fluidNeighborCount++;
                         
                     }
-                    if ((*tempMarker)(i, j +1, k) == FLUID) {
+                    if ((*tempMarkerV)(i, j +1, k) == FLUID) {
                         totalNeighbVelocities += (*mGrid->gridV)(i, j+1, k);
                         fluidNeighborCount++;
                     }
-                    if ((*tempMarker)(i, j - 1, k) == FLUID) {
+                    if ((*tempMarkerV)(i, j - 1, k) == FLUID) {
                         totalNeighbVelocities += (*mGrid->gridV)(i, j-1, k);
                         fluidNeighborCount++;
                     }
-                    if ((*tempMarker)(i, j, k-1) == FLUID) {
+                    if ((*tempMarkerV)(i, j, k-1) == FLUID) {
                         totalNeighbVelocities += (*mGrid->gridV)(i, j, k-1);
                         fluidNeighborCount++;
                     }
-                    if ((*tempMarker)(i, j, k+1) == FLUID) {
+                    if ((*tempMarkerV)(i, j, k+1) == FLUID) {
                         totalNeighbVelocities += (*mGrid->gridV)(i, j, k+1);
                         fluidNeighborCount++;
                     }
@@ -280,38 +301,55 @@ void FlipSolver::ExtrapolateVelocities() {
         }
     }
     
-    for (int i = 0; i < mGrid->gridW->dimX; i++) {
-        for (int j = 0; j < mGrid->gridW->dimY; j++) {
-            for (int k = 0; k < mGrid->gridW->dimZ; k++) {
+    Grid<int>* tempMarkerW = new Grid<int>(mx, my, mz);
+    tempMarkerW->resetToZero();
+    
+    for (int i = 0; i < mx; i++) {
+        for (int j = 0; j < my; j++) {
+            for (int k = 0; k < mz; k++) {
+                if (isFluid(i, j, k) || isFluid(i, j, k-1)) {
+                    tempMarkerW->setValueAt(FLUID, i, j, k);
+                }
                 
-                if ((*tempMarker)(i, j, k) != FLUID || outOfBounds(i, j, k)) {
+                else {
+                    tempMarkerW->setValueAt(AIR, i, j, k);
+                }
+            }
+        }
+    }
+    
+    for (int i = 0; i < mx; i++) {
+        for (int j = 0; j < my; j++) {
+            for (int k = 0; k < mz; k++) {
+                
+                if ((*tempMarkerW)(i, j, k) != FLUID || outOfBounds(i, j, k)) {
                     
                     int fluidNeighborCount = 0;
                     float totalNeighbVelocities;
                     
                     
-                    if ((*tempMarker)(i - 1 , j, k) == FLUID) {
+                    if ((*tempMarkerW)(i - 1 , j, k) == FLUID) {
                         totalNeighbVelocities+= (*mGrid->gridW)(i-1, j, k);
                         fluidNeighborCount++;
                     }
-                    if ((*tempMarker)(i + 1, j, k) == FLUID) {
+                    if ((*tempMarkerW)(i + 1, j, k) == FLUID) {
                         totalNeighbVelocities += (*mGrid->gridW)(i+1, j, k);
                         fluidNeighborCount++;
                         
                     }
-                    if ((*tempMarker)(i, j +1, k) == FLUID) {
+                    if ((*tempMarkerW)(i, j +1, k) == FLUID) {
                         totalNeighbVelocities += (*mGrid->gridW)(i, j+1, k);
                         fluidNeighborCount++;
                     }
-                    if ((*tempMarker)(i, j - 1, k) == FLUID) {
+                    if ((*tempMarkerW)(i, j - 1, k) == FLUID) {
                         totalNeighbVelocities += (*mGrid->gridW)(i, j-1, k);
                         fluidNeighborCount++;
                     }
-                    if ((*tempMarker)(i, j, k-1) == FLUID) {
+                    if ((*tempMarkerW)(i, j, k-1) == FLUID) {
                         totalNeighbVelocities += (*mGrid->gridW)(i, j, k-1);
                         fluidNeighborCount++;
                     }
-                    if ((*tempMarker)(i, j, k+1) == FLUID) {
+                    if ((*tempMarkerW)(i, j, k+1) == FLUID) {
                         totalNeighbVelocities += (*mGrid->gridW)(i, j, k+1);
                         fluidNeighborCount++;
                     }
@@ -339,29 +377,35 @@ void FlipSolver::FlipUpdate(){
     SetGridsToZero();
     MarkSolidBoundaries();
     MarkFluidCells();
-    
-#ifdef DEBUGONE
+//#define DEBUG
+#ifdef DERP
     mGrid->printMarker("SET MARKED PARTICLES");
     mGrid->gridV->printContents("GRIDV INIT");
 #endif
     
     StoreParticlesToGrid();
-#ifdef DEBUGTWO
+    
+
+#ifdef DERP
     mGrid->printMarker("MARKED PARTICLES STILL");
     mGrid->gridV->printContents("PARTICLES STORED TO GRIDV");
 #endif
 
     AddExternalForcesToGrids();
-    
-#ifdef DEBUG
+
+
+#ifdef DERP
     mGrid->gridV->printContents("gravity stored to gridV");
     mGrid->printMarker("marked after gravity");
 #endif
     
     ApplyBoundaryConditions();
-    
-#ifdef BOUNDARYDERP
+
+#define DERP
+#ifdef DERP
+    mGrid->gridU->printContents("boundary enforced on gridU");
     mGrid->gridV->printContents("boundary enforced on gridV");
+    mGrid->gridW->printContents("boundary enforced on gridW");
     mGrid->printMarker("marked after boundaries");
 #endif
     
@@ -371,12 +415,12 @@ void FlipSolver::FlipUpdate(){
     //FOUR
     ExtrapolateVelocities();
     
-    
-#ifdef EXTRAPODERP
+
+#ifdef DERP
     mGrid->printMarker("marked after boundaries");
-    mGrid->gridU->printContents("extrap  on gridV");
+    mGrid->gridU->printContents("extrap  on gridU");
     mGrid->gridV->printContents("extrap  on gridV");
-    mGrid->gridW->printContents("extrap  on gridV");
+    mGrid->gridW->printContents("extrap  on gridW");
 #endif
     
     ApplyBoundaryConditions();
@@ -579,7 +623,7 @@ void FlipSolver::PressureUpdate() {
     p = cg.solve(b);
     
     
-//
+//#define DEBUGPRESSURE
 #ifdef DEBUGPRESSURE
     
     mGrid->gridP->printContents("gridP prepressure");
@@ -589,14 +633,21 @@ void FlipSolver::PressureUpdate() {
     
 #endif
     
+    std::cout << "\n b \n" << b << std::endl;
+    std::cout << "\n p \n" << p << std::endl;
+    
+    
     mGrid->UpdatePressureGrid(A, p);
+    mGrid->gridP->printContents("gridP adjusted for pressure");
+    
+    
     mGrid->UpdateVelocityGridsByPressure();
     
 #define DEBUGPRESSURE
 #ifdef DEBUGPRESSURE
 
     
-    mGrid->gridP->printContents("gridP adjusted for pressure");
+   
     mGrid->gridU->printContents("gridU adjusted for pressure");
     mGrid->gridV->printContents("gridV adjusted for pressure");
     mGrid->gridW->printContents("gridW adjusted for pressure");
@@ -660,7 +711,7 @@ void FlipSolver::buildb(Eigen::VectorXf& b) {
     
     b.setZero();
 
-    float scale = DELTA_TIME/(float) DX;
+    float scale = DELTA_TIME/DX;
     
     //loop over all cells to calculate the b
     for (int i = 0; i < mx; i++) {
@@ -686,7 +737,7 @@ void FlipSolver::buildb(Eigen::VectorXf& b) {
 #define DEBUGB
 #ifdef DEBUGB
     
-    if (!(b.isZero(3))) {
+    if (!(b.isZero(2))) {
         std::cout << "\n nuuuuuuu B \n" << b << std::endl;
     }
         

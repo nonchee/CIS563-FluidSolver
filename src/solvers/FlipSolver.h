@@ -15,10 +15,10 @@
 
 
 
-#define DELTA_TIME 0.03f
-#define PSEP 0.4f
+#define DELTA_TIME 0.08f
+#define PSEP 0.5f
 #define PARTICLES_PER_CELL 1.f/PSEP //technically for each dimension lol
-#define DX 1.f
+#define DX 1.0f
 #define GRAVITY -10.f
 
 

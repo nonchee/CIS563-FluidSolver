@@ -119,15 +119,9 @@ float Grid<T>::getDiv(int i, int j, int k) {
     glm::ivec3 there = here + (glm::ivec3) gridDir;
     
     int ind0 = ijkToIndex(here); //?
-    int ind1 = ijkToIndex(there); //?
-    
-    if(inGridBounds(there)) {
-        return data.at(ind1) - data.at(ind0);
-    }
-       
-    else {
-           return 0 - data.at(ind0);
-    }
+    int ind1 = ijkToIndex(there);
+    //?
+    return data[ind1] - data[ind0];
 }
 
 
